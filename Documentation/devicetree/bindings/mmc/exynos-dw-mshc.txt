@@ -46,6 +46,12 @@ Required Properties:
       - if CIU clock divider value is 0 (that is divide by 1), both tx and rx
         phase shift clocks should be 0.
 
+Optional properties:
+
+* samsung,dw-mshc-hwreset-gpio: GPIO specification for the eMMC reset line found
+  on the Hardkernel ODROID-X2/U2/U3.
+  Required to get the eMMC into a functional state on board reboot.
+
 Required properties for a slot (Deprecated - Recommend to use one slot per host):
 
 * gpios: specifies a list of gpios used for command, clock and data bus. The
