@@ -767,4 +767,5 @@
 
 &watchdog {
 	status = "okay";
+	timeout-sec = <6>;
 };
