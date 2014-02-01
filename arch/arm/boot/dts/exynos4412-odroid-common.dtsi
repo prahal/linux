@@ -147,6 +147,7 @@
 
 	watchdog@10060000 {
 		status = "okay";
+		timeout-sec = <6>;
 	};
 
 	rtc@10070000 {
