@@ -1055,7 +1055,8 @@ static void *mfc_get_drv_data(struct platform_device *pdev);
 static int s5p_mfc_probe(struct platform_device *pdev)
 {
 	struct s5p_mfc_dev *dev;
-	struct video_device *vfd;
+	struct video_device *vfd_dec;
+	struct video_device *vfd_enc;
 	struct resource *res;
 	int ret;
 
@@ -1128,54 +1129,39 @@ static int s5p_mfc_probe(struct platform_device *pdev)
 	init_waitqueue_head(&dev->queue);
 
 	/* decoder */
-	vfd = video_device_alloc();
-	if (!vfd) {
+	vfd_dec = video_device_alloc();
+	if (!vfd_dec) {
 		v4l2_err(&dev->v4l2_dev, "Failed to allocate video device\n");
 		ret = -ENOMEM;
 		goto err_dec_alloc;
 	}
-	vfd->fops	= &s5p_mfc_fops;
-	vfd->ioctl_ops	= get_dec_v4l2_ioctl_ops();
-	vfd->release	= video_device_release;
-	vfd->lock	= &dev->mfc_mutex;
-	vfd->v4l2_dev	= &dev->v4l2_dev;
-	vfd->vfl_dir	= VFL_DIR_M2M;
-	snprintf(vfd->name, sizeof(vfd->name), "%s", S5P_MFC_DEC_NAME);
-	dev->vfd_dec	= vfd;
-	ret = video_register_device(vfd, VFL_TYPE_GRABBER, 0);
-	if (ret) {
-		v4l2_err(&dev->v4l2_dev, "Failed to register video device\n");
-		video_device_release(vfd);
-		goto err_dec_reg;
-	}
-	v4l2_info(&dev->v4l2_dev,
-		  "decoder registered as /dev/video%d\n", vfd->num);
-	video_set_drvdata(vfd, dev);
+	vfd_dec->fops	= &s5p_mfc_fops;
+	vfd_dec->ioctl_ops	= get_dec_v4l2_ioctl_ops();
+	vfd_dec->release	= video_device_release;
+	vfd_dec->lock	= &dev->mfc_mutex;
+	vfd_dec->v4l2_dev	= &dev->v4l2_dev;
+	vfd_dec->vfl_dir	= VFL_DIR_M2M;
+	snprintf(vfd_dec->name, sizeof(vfd_dec->name), "%s", S5P_MFC_DEC_NAME);
+	dev->vfd_dec	= vfd_dec;
+	video_set_drvdata(vfd_dec, dev);
 
 	/* encoder */
-	vfd = video_device_alloc();
-	if (!vfd) {
+	vfd_enc = video_device_alloc();
+	if (!vfd_enc) {
 		v4l2_err(&dev->v4l2_dev, "Failed to allocate video device\n");
 		ret = -ENOMEM;
 		goto err_enc_alloc;
 	}
-	vfd->fops	= &s5p_mfc_fops;
-	vfd->ioctl_ops	= get_enc_v4l2_ioctl_ops();
-	vfd->release	= video_device_release;
-	vfd->lock	= &dev->mfc_mutex;
-	vfd->v4l2_dev	= &dev->v4l2_dev;
-	vfd->vfl_dir	= VFL_DIR_M2M;
-	snprintf(vfd->name, sizeof(vfd->name), "%s", S5P_MFC_ENC_NAME);
-	dev->vfd_enc	= vfd;
-	ret = video_register_device(vfd, VFL_TYPE_GRABBER, 0);
-	if (ret) {
-		v4l2_err(&dev->v4l2_dev, "Failed to register video device\n");
-		video_device_release(vfd);
-		goto err_enc_reg;
-	}
-	v4l2_info(&dev->v4l2_dev,
-		  "encoder registered as /dev/video%d\n", vfd->num);
-	video_set_drvdata(vfd, dev);
+	vfd_enc->fops	= &s5p_mfc_fops;
+	vfd_enc->ioctl_ops	= get_enc_v4l2_ioctl_ops();
+	vfd_enc->release	= video_device_release;
+	vfd_enc->lock	= &dev->mfc_mutex;
+	vfd_enc->v4l2_dev	= &dev->v4l2_dev;
+	vfd_enc->vfl_dir	= VFL_DIR_M2M;
+	snprintf(vfd_enc->name, sizeof(vfd_enc->name), "%s", S5P_MFC_ENC_NAME);
+	dev->vfd_enc	= vfd_enc;
+	video_set_drvdata(vfd_enc, dev);
+
 	platform_set_drvdata(pdev, dev);
 
 	dev->hw_lock = 0;
@@ -1191,15 +1177,29 @@ static int s5p_mfc_probe(struct platform_device *pdev)
 	s5p_mfc_init_hw_cmds(dev);
 	s5p_mfc_init_regs(dev);
 
+	ret = video_register_device(vfd_dec, VFL_TYPE_GRABBER, 0);
+	if (ret) {
+		v4l2_err(&dev->v4l2_dev, "Failed to register video device\n");
+		goto err_dec_reg;
+	}
+	v4l2_info(&dev->v4l2_dev,
+		  "decoder registered as /dev/video%d\n", vfd_dec->num);
+	ret = video_register_device(vfd_enc, VFL_TYPE_GRABBER, 0);
+	if (ret) {
+		v4l2_err(&dev->v4l2_dev, "Failed to register video device\n");
+		goto err_enc_reg;
+	}
+	v4l2_info(&dev->v4l2_dev,
+		  "encoder registered as /dev/video%d\n", vfd_enc->num);
 	pr_debug("%s--\n", __func__);
 	return 0;
 
 /* Deinit MFC if probe had failed */
 err_enc_reg:
-	video_device_release(dev->vfd_enc);
-err_enc_alloc:
 	video_unregister_device(dev->vfd_dec);
 err_dec_reg:
+	video_device_release(dev->vfd_enc);
+err_enc_alloc:
 	video_device_release(dev->vfd_dec);
 err_dec_alloc:
 	v4l2_device_unregister(&dev->v4l2_dev);
