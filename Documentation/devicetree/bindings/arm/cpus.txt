@@ -219,6 +219,13 @@ nodes to be present and contain the properties described below.
 		Value type: <phandle>
 		Definition: Specifies the ACC[2] node associated with this CPU.
 
+	- gic-offset
+		Usage: required for systems that have non-banked GIC
+		       implementation that requires each CPU to use different
+		       offset to access its set of GIC registers
+		Value type: <u32>
+		Definition: Specifies the offset of GIC registers specific to
+			    this CPU.
 
 Example 1 (dual-cluster big.LITTLE system 32-bit):
 
