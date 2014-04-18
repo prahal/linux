@@ -876,6 +876,74 @@ static const struct irq_domain_ops gic_default_routable_irq_domain_ops = {
 const struct irq_domain_ops *gic_routable_irq_domain_ops =
 					&gic_default_routable_irq_domain_ops;
 
+static int gic_setup_bases(struct gic_chip_data *gic, void __iomem *dist_base,
+			   void __iomem *cpu_base, u32 percpu_offset)
+{
+	bool use_cpu_nodes = true;
+	unsigned long offset;
+	unsigned int cpu;
+
+	for_each_possible_cpu(cpu) {
+		struct device_node *cpu_node = of_get_cpu_node(cpu, NULL);
+		u32 goffset;
+
+		if (!cpu_node
+		    || of_property_read_u32(cpu_node, "gic-offset", &goffset)) {
+			use_cpu_nodes = false;
+			break;
+		}
+	}
+
+	if (!(percpu_offset || use_cpu_nodes)
+	    || !IS_ENABLED(CONFIG_GIC_NON_BANKED)) {
+		/* Normal, sane GIC... (or non-banked unsupported) */
+		WARN(percpu_offset || use_cpu_nodes,
+		     "GIC_NON_BANKED not enabled, ignoring %08x offset!",
+		     percpu_offset);
+
+		gic->dist_base.common_base = dist_base;
+		gic->cpu_base.common_base = cpu_base;
+		gic_set_base_accessor(gic, gic_get_common_base);
+
+		return 0;
+	}
+
+	/* Frankein-GIC without banked registers... */
+	gic->dist_base.percpu_base = alloc_percpu(void __iomem *);
+	gic->cpu_base.percpu_base = alloc_percpu(void __iomem *);
+	if (WARN_ON(!gic->dist_base.percpu_base ||
+			!gic->cpu_base.percpu_base)) {
+		free_percpu(gic->dist_base.percpu_base);
+		free_percpu(gic->cpu_base.percpu_base);
+
+		return -ENOMEM;
+	}
+
+	for_each_possible_cpu(cpu) {
+		if (use_cpu_nodes) {
+			struct device_node *cpu_node =
+						of_get_cpu_node(cpu, NULL);
+			u32 goffset;
+
+			of_property_read_u32(cpu_node, "gic-offset", &goffset);
+			offset = goffset;
+		} else {
+			u32 mpidr = cpu_logical_map(cpu);
+			u32 core_id = MPIDR_AFFINITY_LEVEL(mpidr, 0);
+			offset = percpu_offset * core_id;
+		}
+
+		*per_cpu_ptr(gic->dist_base.percpu_base, cpu) =
+							dist_base + offset;
+		*per_cpu_ptr(gic->cpu_base.percpu_base, cpu) =
+							cpu_base + offset;
+	}
+
+	gic_set_base_accessor(gic, gic_get_percpu_base);
+
+	return 0;
+}
+
 void __init gic_init_bases(unsigned int gic_nr, int irq_start,
 			   void __iomem *dist_base, void __iomem *cpu_base,
 			   u32 percpu_offset, struct device_node *node)
@@ -888,38 +956,9 @@ void __init gic_init_bases(unsigned int gic_nr, int irq_start,
 	BUG_ON(gic_nr >= MAX_GIC_NR);
 
 	gic = &gic_data[gic_nr];
-#ifdef CONFIG_GIC_NON_BANKED
-	if (percpu_offset) { /* Frankein-GIC without banked registers... */
-		unsigned int cpu;
 
-		gic->dist_base.percpu_base = alloc_percpu(void __iomem *);
-		gic->cpu_base.percpu_base = alloc_percpu(void __iomem *);
-		if (WARN_ON(!gic->dist_base.percpu_base ||
-			    !gic->cpu_base.percpu_base)) {
-			free_percpu(gic->dist_base.percpu_base);
-			free_percpu(gic->cpu_base.percpu_base);
-			return;
-		}
-
-		for_each_possible_cpu(cpu) {
-			u32 mpidr = cpu_logical_map(cpu);
-			u32 core_id = MPIDR_AFFINITY_LEVEL(mpidr, 0);
-			unsigned long offset = percpu_offset * core_id;
-			*per_cpu_ptr(gic->dist_base.percpu_base, cpu) = dist_base + offset;
-			*per_cpu_ptr(gic->cpu_base.percpu_base, cpu) = cpu_base + offset;
-		}
-
-		gic_set_base_accessor(gic, gic_get_percpu_base);
-	} else
-#endif
-	{			/* Normal, sane GIC... */
-		WARN(percpu_offset,
-		     "GIC_NON_BANKED not enabled, ignoring %08x offset!",
-		     percpu_offset);
-		gic->dist_base.common_base = dist_base;
-		gic->cpu_base.common_base = cpu_base;
-		gic_set_base_accessor(gic, gic_get_common_base);
-	}
+	if (gic_setup_bases(gic, dist_base, cpu_base, percpu_offset))
+		return;
 
 	/*
 	 * Initialize the CPU interface map to all CPUs.

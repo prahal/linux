@@ -49,7 +49,7 @@ Optional
 
 - cpu-offset	: per-cpu offset within the distributor and cpu interface
   regions, used when the GIC doesn't have banked registers. The offset is
-  cpu-offset * cpu-nr.
+  cpu-offset * cpu-nr. (DEPRECATED, see per-CPU 'gic-offset' property.)
 
 - arm,routable-irqs : Total number of gic irq inputs which are not directly
 		  connected from the peripherals, but are routed dynamically
@@ -68,6 +68,38 @@ Example:
 		      <0xfff10100 0x100>;
 	};
 
+* Per-CPU register offset specification for non-banked GIC
+
+On most platforms GIC registers are banked, so each CPU can access its
+registers at the same address. However there is a small number of SoCs
+on which the banking is not implemented and each CPU has its GIC
+register set at different offset from GIC base address. These offsets
+need to be be provided from device tree, as described below.
+
+Optional properties in node of each CPU in the system:
+
+ - gic-offset : A single u32 value that needs to be added to GIC base
+   address to calculate address of GIC registers for that CPU.
+
+See [1] for more details about ARM CPU bindings.
+
+Example:
+
+	cpus {
+		/* ... */
+
+		cpu@a00 {
+			/* ... */
+			gic-offset = <0x0000>;
+		};
+
+		cpu@a01 {
+			/* ... */
+			gic-offset = <0x8000>;
+		};
+	};
+
+[1] Documentation/devicetree/bindings/arm/cpus.txt
 
 * GIC virtualization extensions (VGIC)
 
