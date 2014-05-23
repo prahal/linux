@@ -191,6 +191,9 @@ static int cpu0_cpufreq_probe(struct platform_device *pdev)
 			transition_latency += ret * 1000;
 	}
 
+	if (of_find_property(cpu_dev->of_node, "boost-frequencies", NULL))
+		cpu0_cpufreq_driver.boost_supported = true;
+
 	ret = cpufreq_register_driver(&cpu0_cpufreq_driver);
 	if (ret) {
 		pr_err("failed register driver: %d\n", ret);
