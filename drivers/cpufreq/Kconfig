@@ -189,6 +189,7 @@ config GENERIC_CPUFREQ_CPU0
 	# if CPU_THERMAL is on and THERMAL=m, CPU0 cannot be =y:
 	depends on !CPU_THERMAL || THERMAL
 	select PM_OPP
+	select CPU_FREQ_BOOST_SW
 	help
 	  This adds a generic cpufreq driver for CPU0 frequency management.
 	  It supports both uniprocessor (UP) and symmetric multiprocessor (SMP)

@@ -21,6 +21,8 @@ Optional properties:
 - cooling-min-level:
 - cooling-max-level:
      Please refer to Documentation/devicetree/bindings/thermal/thermal.txt.
+- boost-frequency:
+     Please refer to Documentation/devicetree/bindings/cpufreq/cpufreq-boost.txt
 
 Examples:
 
