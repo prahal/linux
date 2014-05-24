@@ -26,8 +26,8 @@ Required properties:
 		sclk_pixel.
 - clock-names: aliases as per driver requirements for above clock IDs:
 	"hdmi", "sclk_hdmi", "sclk_pixel", "sclk_hdmiphy" and "mout_hdmi".
-- ddc: phandle to the hdmi ddc node
-- phy: phandle to the hdmi phy node
+- ddc: phandle to the hdmi ddc node (this is an i2c adapter)
+- phy: phandle to the hdmi pll phy node (driverless instance of an i2c device, see second example)
 - samsung,syscon-phandle: phandle for system controller node for PMU.
 
 Example:
@@ -38,6 +38,34 @@ Example:
 		interrupts = <0 95 0>;
 		hpd-gpio = <&gpx3 7 1>;
 		ddc = <&hdmi_ddc_node>;
-		phy = <&hdmi_phy_node>;
+		phy = <&hdmiphy_pll>;
 		samsung,syscon-phandle = <&pmu_system_controller>;
+	};
+
+Example (hdmi pll phy):
+
+	/* configuration for exynos4412 */
+	i2c_8: i2c@138e0000 {
+		status = "okay";
+
+		samsung,i2c-slave-addr = <0x10>;
+		samsung,i2c-sda-delay = <100>;
+		samsung,i2c-max-bus-freq = <400000>;
+
+		compatible = "samsung,s3c2440-hdmiphy-i2c";
+		reg = <0x138e0000 0x1000>;
+
+		interrupts = <0 93 0>;
+
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		clocks = <&clock CLK_I2C_HDMI>;
+		clock-names = "i2c";
+
+		/* HDMI PLL PHY (driverless node) */
+		hdmiphy_pll: hdmiphy@38 {
+			compatible = "samsung,exynos4412-hdmiphy";
+			reg = <0x38>;
+		};
 	};
