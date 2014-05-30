@@ -1,0 +1,38 @@
+* Device tree binding for CPU boost frequency (aka over-clocking)
+
+Certain CPU's can be operated in optional 'boost' mode (or sometimes referred as
+overclocking) in which the CPU can operate at frequencies which are not
+specified by the manufacturer as CPU's operating frequency.
+
+Optional Properties:
+- boost-frequencies: list of frequencies in KHz to be used only in boost mode.
+  This list should be a subset of frequencies listed in "operating-points"
+  property. Refer to Documentation/devicetree/bindings/power/opp.txt for
+  details about "operating-points" property.
+
+Example:
+
+	cpus {
+		#address-cells = <1>;
+		#size-cells = <0>;
+		cpu@0 {
+			device_type = "cpu";
+			compatible = "arm,cortex-a9";
+			reg = <0>;
+
+			operating-points = <
+				1500000 1350000
+				1400000 1287500
+				1300000 1250000
+				1200000 1187500
+				1100000 1137500
+				1000000 1087500
+			>;
+			boost-frequencies = <1500000 1400000>;
+		};
+		cpu@1 {
+			device_type = "cpu";
+			compatible = "arm,cortex-a9";
+			reg = <1>;
+		};
+	};
