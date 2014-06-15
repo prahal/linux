@@ -945,4 +945,12 @@
 		power-domains = <&pd_lcd0>;
 		#iommu-cells = <0>;
 	};
+
+	sss@10830000 {
+		compatible = "samsung,exynos4210-secss";
+		reg = <0x10830000 0x10000>;
+		interrupts = <0 112 0>;
+		clocks = <&clock CLK_SSS>;
+		clock-names = "secss";
+	};
 };
