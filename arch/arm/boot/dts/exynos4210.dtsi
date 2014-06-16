@@ -25,6 +25,25 @@
 / {
 	compatible = "samsung,exynos4210", "samsung,exynos4";
 
+	cpus {
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		cpu@900 {
+			compatible = "arm,cortex-a9";
+			device_type = "cpu";
+			reg = <0x900>;
+			gic-offset = <0x0000>;
+		};
+
+		cpu@901 {
+			compatible = "arm,cortex-a9";
+			device_type = "cpu";
+			reg = <0x901>;
+			gic-offset = <0x8000>;
+		};
+	};
+
 	aliases {
 		pinctrl0 = &pinctrl_0;
 		pinctrl1 = &pinctrl_1;

@@ -22,6 +22,15 @@
 / {
 	compatible = "samsung,exynos4212", "samsung,exynos4";
 
+	cpus {
+		cpu@a01 {
+			compatible = "arm,cortex-a9";
+			device_type = "cpu";
+			reg = <0xa01>;
+			gic-offset = <0x8000>;
+		};
+	};
+
 	combiner: interrupt-controller@10440000 {
 		samsung,combiner-nr = <18>;
 	};
