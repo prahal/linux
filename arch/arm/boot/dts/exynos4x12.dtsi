@@ -31,6 +31,18 @@
 		mshc0 = &mshc_0;
 	};
 
+	cpus {
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		cpu@a00 {
+			compatible = "arm,cortex-a9";
+			device_type = "cpu";
+			reg = <0xa00>;
+			gic-offset = <0x0000>;
+		};
+	};
+
 	sysram@02020000 {
 		compatible = "mmio-sram";
 		reg = <0x02020000 0x40000>;
