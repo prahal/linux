@@ -19,6 +19,12 @@
 	chosen {
 	};
 
+	cpus {
+		cpu@0 {
+			cpu0-supply = <&buck2_reg>;
+		};
+	};
+
 	pinctrl@11400000 {
 		/*
 		 * Disabled pullups since external part has its own pullups and
