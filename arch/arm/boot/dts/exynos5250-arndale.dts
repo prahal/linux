@@ -44,6 +44,12 @@
 		bootargs = "console=ttySAC2,115200";
 	};
 
+	cpus {
+		cpu@0 {
+			cpu0-supply = <&buck2_reg>;
+		};
+	};
+
 	rtc@101E0000 {
 		status = "okay";
 	};

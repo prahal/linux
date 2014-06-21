@@ -11,6 +11,12 @@
 #include "exynos4412.dtsi"
 
 / {
+	cpus {
+		cpu@a00 {
+			cpu0-supply = <&buck2_reg>;
+		};
+	};
+
 	reserved-memory {
 		#address-cells = <1>;
 		#size-cells = <1>;
