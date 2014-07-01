@@ -111,6 +111,7 @@ static __init int exynos4_pm_init_power_domain(void)
 	struct device_node *np;
 
 	for_each_compatible_node(np, NULL, "samsung,exynos4210-pd") {
+		struct dev_power_governor *gov = NULL;
 		struct exynos_pm_domain *pd;
 		int on, i;
 		struct device *dev;
@@ -124,6 +125,9 @@ static __init int exynos4_pm_init_power_domain(void)
 					__func__);
 			return -ENOMEM;
 		}
+
+		if (of_property_read_bool(np, "domain-always-on"))
+			gov = &pm_domain_always_on_gov;
 
 		pd->pd.name = kstrdup(np->name, GFP_KERNEL);
 		pd->name = pd->pd.name;
@@ -157,7 +161,7 @@ static __init int exynos4_pm_init_power_domain(void)
 no_clk:
 		on = __raw_readl(pd->base + 0x4) & INT_LOCAL_PWR_EN;
 
-		pm_genpd_init(&pd->pd, NULL, !on);
+		pm_genpd_init(&pd->pd, gov, !on);
 		of_genpd_add_provider_simple(np, &pd->pd);
 	}
 
