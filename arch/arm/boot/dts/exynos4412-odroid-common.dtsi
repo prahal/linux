@@ -442,6 +442,14 @@
 		samsung,i2c-max-bus-freq = <400000>;
 	};
 
+	lcd0-power-domain@10023C80 {
+		domain-always-on;
+	};
+
+	tv-power-domain@10023C20 {
+		domain-always-on;
+	};
+
 	exynos-usbphy@125B0000 {
 		status = "okay";
 	};
