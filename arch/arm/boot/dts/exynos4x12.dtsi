@@ -377,4 +377,14 @@
 		clocks = <&clock CLK_SMMU_LITE1>, <&clock CLK_FIMC_LITE1>;
 		#iommu-cells = <0>;
 	};
+
+	hdmi: hdmi@12D00000 {
+		compatible = "samsung,exynos4212-hdmi";
+	};
+
+	mixer: mixer@12C10000 {
+		compatible = "samsung,exynos4212-mixer";
+		clock-names = "mixer", "sclk_hdmi", "vp";
+		clocks = <&clock CLK_MIXER>, <&clock CLK_SCLK_HDMI>, <&clock CLK_VP>;
+	};
 };

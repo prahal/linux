@@ -207,4 +207,11 @@
 		samsung,power-domain = <&pd_lcd1>;
 		#iommu-cells = <0>;
 	};
+
+	mixer: mixer@12C10000 {
+		clock-names = "mixer", "sclk_hdmi",
+			"vp", "sclk_mixer";
+		clocks = <&clock CLK_MIXER>, <&clock CLK_SCLK_HDMI>,
+			<&clock CLK_VP>, <&clock CLK_SCLK_MIXER>;
+	};
 };
