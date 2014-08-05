@@ -1347,6 +1347,7 @@ struct platform_driver mixer_driver = {
 		.name = "exynos-mixer",
 		.owner = THIS_MODULE,
 		.of_match_table = mixer_match_types,
+		.flags	= DRIVER_HAS_OWN_IOMMU_MANAGER,
 	},
 	.probe = mixer_probe,
 	.remove = mixer_remove,
