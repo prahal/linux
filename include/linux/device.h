@@ -253,6 +253,8 @@ struct device_driver {
 
 /* disables bind/unbind via sysfs */
 #define DRIVER_SUPPRESS_BIND_ATTRS	(1 << 0)
+/* driver uses own methods to manage IO address space */
+#define DRIVER_HAS_OWN_IOMMU_MANAGER	(1 << 1)
 
 extern int __must_check driver_register(struct device_driver *drv);
 extern void driver_unregister(struct device_driver *drv);
