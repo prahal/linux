@@ -853,5 +853,6 @@ struct platform_driver rotator_driver = {
 		.owner	= THIS_MODULE,
 		.pm	= &rotator_pm_ops,
 		.of_match_table = exynos_rotator_match,
+		.flags	= DRIVER_HAS_OWN_IOMMU_MANAGER,
 	},
 };
