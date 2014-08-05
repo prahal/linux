@@ -608,7 +608,7 @@ int __init_or_module platform_driver_probe(struct platform_driver *drv,
 	drv->prevent_deferred_probe = true;
 
 	/* make sure driver won't have bind/unbind attributes */
-	drv->driver.suppress_bind_attrs = true;
+	drv->driver.flags = DRIVER_SUPPRESS_BIND_ATTRS;
 
 	/* temporary section violation during probe() */
 	drv->probe = probe;

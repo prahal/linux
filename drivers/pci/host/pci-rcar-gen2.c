@@ -413,7 +413,7 @@ static struct platform_driver rcar_pci_driver = {
 	.driver = {
 		.name = "pci-rcar-gen2",
 		.owner = THIS_MODULE,
-		.suppress_bind_attrs = true,
+		.flags = DRIVER_SUPPRESS_BIND_ATTRS,
 		.of_match_table = rcar_pci_of_match,
 	},
 	.probe = rcar_pci_probe,

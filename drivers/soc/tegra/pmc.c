@@ -892,7 +892,7 @@ static const struct of_device_id tegra_pmc_match[] = {
 static struct platform_driver tegra_pmc_driver = {
 	.driver = {
 		.name = "tegra-pmc",
-		.suppress_bind_attrs = true,
+		.flags = DRIVER_SUPPRESS_BIND_ATTRS,
 		.of_match_table = tegra_pmc_match,
 		.pm = &tegra_pmc_pm_ops,
 	},
