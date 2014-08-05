@@ -23,7 +23,11 @@
 #include <linux/workqueue.h>
 #include <linux/of.h>
 #include <linux/of_reserved_mem.h>
+#include <linux/of_platform.h>
 #include <media/videobuf2-core.h>
+
+#include <asm/dma-iommu.h>
+
 #include "s5p_mfc_common.h"
 #include "s5p_mfc_ctrl.h"
 #include "s5p_mfc_debug.h"
@@ -997,6 +1001,39 @@ static const struct v4l2_file_operations s5p_mfc_fops = {
 	.mmap = s5p_mfc_mmap,
 };
 
+static struct device *s5p_mfc_alloc_memdev(struct device *dev, const char *name)
+{
+	struct device *child;
+	int ret;
+
+	child = devm_kzalloc(dev, sizeof(struct device), GFP_KERNEL);
+	if (!child)
+		return NULL;
+
+	device_initialize(child);
+	dev_set_name(child, "%s:%s", dev_name(dev), name);
+	child->parent = dev;
+	child->bus = dev->bus;
+	child->coherent_dma_mask = dev->coherent_dma_mask;
+	child->dma_mask = dev->dma_mask;
+
+	if (device_add(child) == 0) {
+		ret = arm_iommu_create_default_mapping(child, 0x20000000,
+						       SZ_256M);
+		if (ret == 0)
+			return child;
+	}
+
+	put_device(child);
+	return NULL;
+}
+
+void s5p_mfc_free_memdev(struct device *dev)
+{
+	arm_iommu_release_default_mapping(dev);
+	put_device(dev);
+}
+
 static void *mfc_get_drv_data(struct platform_device *pdev);
 
 /* MFC probe function */
@@ -1050,8 +1087,8 @@ static int s5p_mfc_probe(struct platform_device *pdev)
 		goto err_res;
 	}
 
-	dev->mem_dev_l = &dev->plat_dev->dev;
-	dev->mem_dev_r = &dev->plat_dev->dev;
+	dev->mem_dev_l = s5p_mfc_alloc_memdev(&dev->plat_dev->dev, "left");
+	dev->mem_dev_r = s5p_mfc_alloc_memdev(&dev->plat_dev->dev, "right");
 
 	dev->alloc_ctx[0] = vb2_dma_contig_init_ctx(dev->mem_dev_l);
 	if (IS_ERR(dev->alloc_ctx[0])) {
@@ -1182,6 +1219,10 @@ static int s5p_mfc_remove(struct platform_device *pdev)
 	s5p_mfc_release_firmware(dev);
 	vb2_dma_contig_cleanup_ctx(dev->alloc_ctx[0]);
 	vb2_dma_contig_cleanup_ctx(dev->alloc_ctx[1]);
+	if (dev->mem_dev_l)
+		s5p_mfc_free_memdev(dev->mem_dev_l);
+	if (dev->mem_dev_r)
+		s5p_mfc_free_memdev(dev->mem_dev_r);
 
 	s5p_mfc_final_pm(dev);
 	return 0;
@@ -1437,6 +1478,7 @@ static struct platform_driver s5p_mfc_driver = {
 		.owner	= THIS_MODULE,
 		.pm	= &s5p_mfc_pm_ops,
 		.of_match_table = exynos_mfc_match,
+		.flags	= DRIVER_HAS_OWN_IOMMU_MANAGER,
 	},
 };
 
