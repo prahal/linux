@@ -2106,4 +2106,35 @@ void arm_iommu_detach_device(struct device *dev)
 }
 EXPORT_SYMBOL_GPL(arm_iommu_detach_device);
 
+int arm_iommu_create_default_mapping(struct device *dev, dma_addr_t base,
+				     size_t size)
+{
+	struct dma_iommu_mapping *mapping;
+	int ret;
+
+	mapping = arm_iommu_create_mapping(dev->bus, base, size);
+	if (IS_ERR(mapping))
+		return PTR_ERR(mapping);
+
+	ret = arm_iommu_attach_device(dev, mapping);
+	if (ret) {
+		arm_iommu_release_mapping(mapping);
+		return ret;
+	}
+
+	return 0;
+}
+EXPORT_SYMBOL_GPL(arm_iommu_create_default_mapping);
+
+void arm_iommu_release_default_mapping(struct device *dev)
+{
+	struct dma_iommu_mapping *mapping = to_dma_iommu_mapping(dev);
+	if (!mapping)
+		return;
+
+	arm_iommu_detach_device(dev);
+	arm_iommu_release_mapping(mapping);
+}
+EXPORT_SYMBOL_GPL(arm_iommu_release_default_mapping);
+
 #endif

@@ -33,5 +33,10 @@ int arm_iommu_attach_device(struct device *dev,
 					struct dma_iommu_mapping *mapping);
 void arm_iommu_detach_device(struct device *dev);
 
+int arm_iommu_create_default_mapping(struct device *dev, dma_addr_t base,
+				     size_t size);
+
+void arm_iommu_release_default_mapping(struct device *dev);
+
 #endif /* __KERNEL__ */
 #endif
