@@ -201,7 +201,7 @@ extern struct klist *bus_get_device_klist(struct bus_type *bus);
  * @bus:	The bus which the device of this driver belongs to.
  * @owner:	The module owner.
  * @mod_name:	Used for built-in modules.
- * @suppress_bind_attrs: Disables bind/unbind via sysfs.
+ * @flags:	Flags defining driver behaviour, see below.
  * @of_match_table: The open firmware table.
  * @acpi_match_table: The ACPI match table.
  * @probe:	Called to query the existence of a specific device,
@@ -234,7 +234,7 @@ struct device_driver {
 	struct module		*owner;
 	const char		*mod_name;	/* used for built-in modules */
 
-	bool suppress_bind_attrs;	/* disables bind/unbind via sysfs */
+	unsigned long		flags;
 
 	const struct of_device_id	*of_match_table;
 	const struct acpi_device_id	*acpi_match_table;
@@ -251,6 +251,8 @@ struct device_driver {
 	struct driver_private *p;
 };
 
+/* disables bind/unbind via sysfs */
+#define DRIVER_SUPPRESS_BIND_ATTRS	(1 << 0)
 
 extern int __must_check driver_register(struct device_driver *drv);
 extern void driver_unregister(struct device_driver *drv);

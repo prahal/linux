@@ -1927,7 +1927,7 @@ static struct platform_driver tegra_pcie_driver = {
 		.name = "tegra-pcie",
 		.owner = THIS_MODULE,
 		.of_match_table = tegra_pcie_of_match,
-		.suppress_bind_attrs = true,
+		.flags = DRIVER_SUPPRESS_BIND_ATTRS,
 	},
 	.probe = tegra_pcie_probe,
 };

@@ -707,7 +707,7 @@ int bus_add_driver(struct device_driver *drv)
 			__func__, drv->name);
 	}
 
-	if (!drv->suppress_bind_attrs) {
+	if (!(drv->flags & DRIVER_SUPPRESS_BIND_ATTRS)) {
 		error = add_bind_files(drv);
 		if (error) {
 			/* Ditto */
@@ -740,7 +740,7 @@ void bus_remove_driver(struct device_driver *drv)
 	if (!drv->bus)
 		return;
 
-	if (!drv->suppress_bind_attrs)
+	if (!(drv->flags & DRIVER_SUPPRESS_BIND_ATTRS))
 		remove_bind_files(drv);
 	driver_remove_groups(drv, drv->bus->drv_groups);
 	driver_remove_file(drv, &driver_attr_uevent);
