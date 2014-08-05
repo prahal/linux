@@ -9,6 +9,8 @@
 #include <linux/kmemcheck.h>
 #include <linux/kref.h>
 
+#ifdef CONFIG_ARM_DMA_USE_IOMMU
+
 struct dma_iommu_mapping {
 	/* iommu specific data */
 	struct iommu_domain	*domain;
@@ -37,6 +39,35 @@ int arm_iommu_create_default_mapping(struct device *dev, dma_addr_t base,
 				     size_t size);
 
 void arm_iommu_release_default_mapping(struct device *dev);
+
+#else
+
+static inline struct dma_iommu_mapping *
+arm_iommu_create_mapping(struct bus_type *bus, dma_addr_t base, size_t size)
+{
+	return ERR_PTR(-ENOSYS);
+}
+
+static inline void
+arm_iommu_release_mapping(struct dma_iommu_mapping *mapping) { }
+
+static inline int arm_iommu_attach_device(struct device *dev,
+					struct dma_iommu_mapping *mapping)
+{
+	return -ENOSYS;
+}
+
+static inline void arm_iommu_detach_device(struct device *dev) { }
+
+static inline int arm_iommu_create_default_mapping(struct device *dev,
+						dma_addr_t base, size_t size)
+{
+	return -ENOSYS;
+}
+
+static inline void arm_iommu_release_default_mapping(struct device *dev) { }
+
+#endif
 
 #endif /* __KERNEL__ */
 #endif
