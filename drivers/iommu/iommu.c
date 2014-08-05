@@ -760,6 +760,9 @@ static int iommu_bus_notifier(struct notifier_block *nb,
 	case BUS_NOTIFY_UNBOUND_DRIVER:
 		group_action = IOMMU_GROUP_NOTIFY_UNBOUND_DRIVER;
 		break;
+	case BUS_NOTIFY_DRVBIND_FAILED:
+		group_action = IOMMU_GROUP_NOTIFY_DRVBIND_FAILED;
+		break;
 	}
 
 	if (group_action)
