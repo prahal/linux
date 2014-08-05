@@ -20,6 +20,7 @@
 #include <linux/clk.h>
 #include <linux/err.h>
 #include <linux/mm.h>
+#include <linux/of.h>
 #include <linux/iommu.h>
 #include <linux/errno.h>
 #include <linux/list.h>
@@ -1186,6 +1187,11 @@ static const struct iommu_ops exynos_iommu_ops = {
 static int __init exynos_iommu_init(void)
 {
 	int ret;
+
+	if (!of_machine_is_compatible("samsung,exynos3") &&
+	    !of_machine_is_compatible("samsung,exynos4") &&
+	    !of_machine_is_compatible("samsung,exynos5"))
+		return -ENODEV;
 
 	lv2table_kmem_cache = kmem_cache_create("exynos-iommu-lv2table",
 				LV2TABLE_SIZE, LV2TABLE_SIZE, 0, NULL);
