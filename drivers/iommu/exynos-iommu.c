@@ -12,6 +12,7 @@
 #define DEBUG
 #endif
 
+#include <linux/dma-mapping.h>
 #include <linux/io.h>
 #include <linux/interrupt.h>
 #include <linux/platform_device.h>
@@ -29,6 +30,7 @@
 #include <linux/export.h>
 
 #include <asm/cacheflush.h>
+#include <asm/dma-iommu.h>
 #include <asm/pgtable.h>
 
 typedef u32 sysmmu_iova_t;
@@ -1064,6 +1066,43 @@ static phys_addr_t exynos_iommu_iova_to_phys(struct iommu_domain *domain,
 	return phys;
 }
 
+static int sysmmu_master_device_event(struct notifier_block *nb,
+				      unsigned long val, void *p)
+{
+	struct device *dev = p;
+	struct exynos_iommu_owner *owner = dev->archdata.iommu;
+	struct sysmmu_drvdata *data;
+
+	if (!owner)
+		return 0;
+
+	data = list_first_entry(&owner->clients, struct sysmmu_drvdata,
+				owner_node);
+	if (!data)
+		return 0;
+
+	switch (val) {
+
+	case IOMMU_GROUP_NOTIFY_BIND_DRIVER:
+		if (!(dev->driver->flags & DRIVER_HAS_OWN_IOMMU_MANAGER))
+			arm_iommu_create_default_mapping(dev, data->base,
+							 data->size);
+		break;
+
+	case IOMMU_GROUP_NOTIFY_UNBOUND_DRIVER:
+	case IOMMU_GROUP_NOTIFY_DRVBIND_FAILED:
+		if (!(dev->driver->flags & DRIVER_HAS_OWN_IOMMU_MANAGER))
+			arm_iommu_release_default_mapping(dev);
+		break;
+	}
+
+	return 0;
+}
+
+static struct notifier_block sysmmu_master_device_notifier = {
+	.notifier_call = sysmmu_master_device_event,
+};
+
 static void __free_owner_struct(struct exynos_iommu_owner *owner,
 				struct device *dev)
 {
@@ -1202,6 +1241,7 @@ static int exynos_iommu_add_device(struct device *dev)
 	if (ret != 0)
 		goto err;
 
+	iommu_group_register_notifier(group, &sysmmu_master_device_notifier);
 	iommu_group_put(group);
 
 	return 0;
@@ -1213,8 +1253,15 @@ err:
 static void exynos_iommu_remove_device(struct device *dev)
 {
 	struct exynos_iommu_owner *owner = dev->archdata.iommu;
+	struct iommu_group *group = iommu_group_get(dev);
 
-	iommu_group_remove_device(dev);
+	if (group) {
+		iommu_group_unregister_notifier(group,
+						&sysmmu_master_device_notifier);
+		iommu_group_remove_device(dev);
+		iommu_group_put(group);
+	}
+
 	if (owner)
 		__free_owner_struct(owner, dev);
 }
