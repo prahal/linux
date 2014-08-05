@@ -28,6 +28,7 @@
 #include <linux/list.h>
 #include <linux/memblock.h>
 #include <linux/export.h>
+#include <linux/pm_domain.h>
 
 #include <asm/cacheflush.h>
 #include <asm/dma-iommu.h>
@@ -208,6 +209,7 @@ struct sysmmu_drvdata {
 	struct clk *clk;
 	struct clk *clk_master;
 	int activations;
+	int suspended;
 	spinlock_t lock;
 	struct iommu_domain *domain;
 	struct list_head domain_node;
@@ -217,6 +219,7 @@ struct sysmmu_drvdata {
 	const char *name;
 	dma_addr_t base;
 	size_t size;
+	struct notifier_block pm_notifier;
 };
 
 static bool set_sysmmu_active(struct sysmmu_drvdata *data)
@@ -235,7 +238,7 @@ static bool set_sysmmu_inactive(struct sysmmu_drvdata *data)
 
 static bool is_sysmmu_active(struct sysmmu_drvdata *data)
 {
-	return data->activations > 0;
+	return (!data->suspended && data->activations > 0);
 }
 
 static void sysmmu_unblock(void __iomem *sfrbase)
@@ -528,6 +531,51 @@ static void sysmmu_tlb_invalidate_entry(struct sysmmu_drvdata *data,
 	spin_unlock_irqrestore(&data->lock, flags);
 }
 
+static void sysmmu_restore_state(struct sysmmu_drvdata *data)
+{
+	unsigned long flags;
+
+	spin_lock_irqsave(&data->lock, flags);
+	if (data->activations > 0) {
+		data->suspended = false;
+		__sysmmu_enable_nocount(data);
+		dev_dbg(data->sysmmu, "restored state\n");
+	}
+	spin_unlock_irqrestore(&data->lock, flags);
+}
+
+static void sysmmu_save_state(struct sysmmu_drvdata *data)
+{
+	unsigned long flags;
+
+	spin_lock_irqsave(&data->lock, flags);
+	if (data->activations > 0) {
+		__sysmmu_disable_nocount(data);
+		data->suspended = true;
+		dev_dbg(data->sysmmu, "saved state\n");
+	}
+	spin_unlock_irqrestore(&data->lock, flags);
+}
+
+static int sysmmu_runtime_genpd_event(struct notifier_block *this,
+				unsigned long event, void *ptr)
+{
+	struct sysmmu_drvdata *data;
+
+	data = container_of(this, struct sysmmu_drvdata, pm_notifier);
+
+	switch (event) {
+	case PM_GENPD_POST_POWER_ON:
+		sysmmu_restore_state(data);
+		break;
+	case PM_GENPD_POWER_OFF_PREPARE:
+		sysmmu_save_state(data);
+		break;
+	}
+
+	return NOTIFY_DONE;
+}
+
 static int __init exynos_sysmmu_probe(struct platform_device *pdev)
 {
 	int irq, ret;
@@ -580,6 +628,7 @@ static int __init exynos_sysmmu_probe(struct platform_device *pdev)
 	}
 
 	data->sysmmu = dev;
+	data->pm_notifier.notifier_call = sysmmu_runtime_genpd_event;
 
 	/* default io address space parameters */
 	data->base = SZ_1G;
@@ -708,6 +757,7 @@ static int exynos_iommu_attach_device(struct iommu_domain *domain,
 		return -ENODEV;
 
 	list_for_each_entry(data, &owner->clients, owner_node) {
+		pm_runtime_get_sync(data->sysmmu);
 		ret = __sysmmu_enable(data, pagetable, domain);
 		if (ret >= 0) {
 			data->master = dev;
@@ -716,6 +766,7 @@ static int exynos_iommu_attach_device(struct iommu_domain *domain,
 			list_add_tail(&data->domain_node, &priv->clients);
 			spin_unlock_irqrestore(&priv->lock, flags);
 		}
+		pm_runtime_put(data->sysmmu);
 	}
 
 	if (ret < 0) {
@@ -1156,6 +1207,7 @@ static int __init_master_sysmmu(struct device *dev)
 		}
 
 		list_add_tail(&data->owner_node, &owner->clients);
+		pm_genpd_register_notifier(dev, &data->pm_notifier);
 
 		i++;
 	}
