@@ -12,23 +12,19 @@
 #define DEBUG
 #endif
 
-#include <linux/dma-mapping.h>
-#include <linux/io.h>
-#include <linux/interrupt.h>
-#include <linux/platform_device.h>
-#include <linux/slab.h>
-#include <linux/pm_runtime.h>
 #include <linux/clk.h>
+#include <linux/dma-mapping.h>
 #include <linux/err.h>
-#include <linux/mm.h>
+#include <linux/io.h>
+#include <linux/iommu.h>
+#include <linux/interrupt.h>
+#include <linux/list.h>
 #include <linux/of.h>
 #include <linux/of_platform.h>
-#include <linux/iommu.h>
-#include <linux/errno.h>
-#include <linux/list.h>
-#include <linux/memblock.h>
-#include <linux/export.h>
+#include <linux/platform_device.h>
 #include <linux/pm_domain.h>
+#include <linux/pm_runtime.h>
+#include <linux/slab.h>
 
 #include <asm/cacheflush.h>
 #include <asm/dma-iommu.h>
