@@ -981,7 +981,7 @@ static struct platform_driver rcar_pcie_driver = {
 		.name = DRV_NAME,
 		.owner = THIS_MODULE,
 		.of_match_table = rcar_pcie_of_match,
-		.suppress_bind_attrs = true,
+		.flags = DRIVER_SUPPRESS_BIND_ATTRS,
 	},
 	.probe = rcar_pcie_probe,
 };

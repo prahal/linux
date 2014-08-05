@@ -406,7 +406,7 @@ static struct lm_driver impd1_driver = {
 		 * As we're dropping the probe() function, suppress driver
 		 * binding from sysfs.
 		 */
-		.suppress_bind_attrs = true,
+		.flags = DRIVER_SUPPRESS_BIND_ATTRS,
 	},
 	.probe		= impd1_probe,
 	.remove		= impd1_remove,
