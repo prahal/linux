@@ -11,6 +11,24 @@
 #include "exynos4412.dtsi"
 
 / {
+	reserved-memory {
+		#address-cells = <1>;
+		#size-cells = <1>;
+		ranges;
+
+		mfc_left: region@77000000 {
+			compatible = "shared-dma-pool";
+			reusable;
+			reg = <0x77000000 0x1000000>;
+		};
+
+		mfc_right: region@78000000 {
+			compatible = "shared-dma-pool";
+			reusable;
+			reg = <0x78000000 0x1000000>;
+		};
+	};
+
 	firmware@0204F000 {
 		compatible = "samsung,secure-firmware";
 		reg = <0x0204F000 0x1000>;
@@ -362,6 +380,12 @@
 
 	ehci: ehci@12580000 {
 		status = "okay";
+	};
+
+	codec@13400000 {
+		status = "okay";
+		memory-region = <&mfc_left>, <&mfc_right>;
+		memory-region-names = "left", "right";
 	};
 };
 
