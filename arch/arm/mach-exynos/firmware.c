@@ -102,7 +102,9 @@ static int exynos_suspend(void)
 	writel(EXYNOS_SLEEP_MAGIC, sysram_ns_base_addr + EXYNOS_BOOT_FLAG);
 	writel(virt_to_phys(exynos_cpu_resume_ns),
 		sysram_ns_base_addr + EXYNOS_BOOT_ADDR);
-
+#ifdef CONFIG_CACHE_L2X0
+	l2x0_regs_phys = virt_to_phys(&l2x0_saved_regs);
+#endif
 	return cpu_suspend(0, exynos_cpu_suspend);
 }
 
