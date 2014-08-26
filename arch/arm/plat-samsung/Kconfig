@@ -245,11 +245,6 @@ config SAMSUNG_PM_GPIO
 
 endif
 
-config S5P_DEV_MFC
-	bool
-	help
-	  Compile in setup memory (init) code for MFC
-
 comment "Power management"
 
 config SAMSUNG_PM_DEBUG
