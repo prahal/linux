@@ -312,6 +312,7 @@ int of_reserved_mem_device_init(struct device *dev)
 {
 	return __rmem_dev_call(dev, __rmem_dev_init);
 }
+EXPORT_SYMBOL(of_reserved_mem_device_init);
 
 /**
  * of_reserved_mem_device_release() - release reserved memory device structures
@@ -323,3 +324,4 @@ void of_reserved_mem_device_release(struct device *dev)
 {
 	__rmem_dev_call(dev, __rmem_dev_release);
 }
+EXPORT_SYMBOL(of_reserved_mem_device_release);
