@@ -89,6 +89,11 @@
 		status = "okay";
 	};
 
+	tmu@100C0000 {
+		status = "okay";
+		vtmu-supply = <&ldo10_reg>;
+	};
+
 	g2d@10800000 {
 		status = "okay";
 	};
@@ -226,6 +231,14 @@
 					regulator-min-microvolt = <1000000>;
 					regulator-max-microvolt = <1000000>;
 					regulator-always-on;
+				};
+
+				/* This regulator also supplies the TMU block. */
+				ldo10_reg: LDO10 {
+					regulator-name = "vdd_mipi_1.8V";
+					regulator-min-microvolt = <1800000>;
+					regulator-max-microvolt = <1800000>;
+					regulator-boot-on;
 				};
 
 				ldo11_reg: LDO11 {
