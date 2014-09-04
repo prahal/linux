@@ -387,6 +387,22 @@
 		};
 	};
 
+	i2c_hdmiddc: i2c@13880000 {
+		status = "okay";
+
+		samsung,i2c-slave-addr = <0x10>;
+		samsung,i2c-sda-delay = <100>;
+		samsung,i2c-max-bus-freq = <400000>;
+	};
+
+	i2c@138E0000 {
+		status = "okay";
+
+		samsung,i2c-slave-addr = <0x10>;
+		samsung,i2c-sda-delay = <100>;
+		samsung,i2c-max-bus-freq = <400000>;
+	};
+
 	exynos-usbphy@125B0000 {
 		status = "okay";
 	};
