@@ -472,6 +472,10 @@
 	ddc = <&i2c_hdmiddc>;
 };
 
+&mixer {
+	status = "okay";
+};
+
 &pinctrl_1 {
 	gpio_power_key: power_key {
 		samsung,pins = "gpx1-3";
