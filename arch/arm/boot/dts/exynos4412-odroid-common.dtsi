@@ -178,6 +178,10 @@
 		};
 	};
 
+	mixer {
+		status = "okay";
+	};
+
 	hdmi {
 		status = "okay";
 
