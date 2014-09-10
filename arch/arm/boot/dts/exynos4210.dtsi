@@ -164,18 +164,30 @@
 			samsung,pix-limits = <4224 8192 1920 4224>;
 			samsung,mainscaler-ext;
 			samsung,cam-if;
+			assigned-clocks = <&clock CLK_MOUT_FIMC0>,
+					<&clock CLK_SCLK_FIMC0>;
+			assigned-clock-parents = <&clock CLK_SCLK_MPLL>;
+			assigned-clock-rates = <0>, <160000000>;
 		};
 
 		fimc_1: fimc@11810000 {
 			samsung,pix-limits = <4224 8192 1920 4224>;
 			samsung,mainscaler-ext;
 			samsung,cam-if;
+			assigned-clocks = <&clock CLK_MOUT_FIMC1>,
+					<&clock CLK_SCLK_FIMC1>;
+			assigned-clock-parents = <&clock CLK_SCLK_MPLL>;
+			assigned-clock-rates = <0>, <160000000>;
 		};
 
 		fimc_2: fimc@11820000 {
 			samsung,pix-limits = <4224 8192 1920 4224>;
 			samsung,mainscaler-ext;
 			samsung,lcd-wb;
+			assigned-clocks = <&clock CLK_MOUT_FIMC2>,
+					<&clock CLK_SCLK_FIMC2>;
+			assigned-clock-parents = <&clock CLK_SCLK_MPLL>;
+			assigned-clock-rates = <0>, <160000000>;
 		};
 
 		fimc_3: fimc@11830000 {
@@ -183,6 +195,10 @@
 			samsung,rotators = <0>;
 			samsung,mainscaler-ext;
 			samsung,lcd-wb;
+			assigned-clocks = <&clock CLK_MOUT_FIMC3>,
+					<&clock CLK_SCLK_FIMC3>;
+			assigned-clock-parents = <&clock CLK_SCLK_MPLL>;
+			assigned-clock-rates = <0>, <160000000>;
 		};
 	};
 
