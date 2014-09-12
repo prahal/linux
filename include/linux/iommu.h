@@ -57,6 +57,16 @@ struct iommu_domain {
 	struct iommu_domain_geometry geometry;
 };
 
+struct iommu_data {
+	/* Initialised by DMA mapping */
+	struct iommu_domain *domain;
+	struct iova_domain *iovad;
+
+	/* Initialised by the IOMMU driver */
+	const struct iommu_ops *ops;
+	void *priv;
+};
+
 enum iommu_cap {
 	IOMMU_CAP_CACHE_COHERENCY,	/* IOMMU can enforce cache coherent DMA
 					   transactions */
