@@ -1,8 +1,11 @@
 #ifndef __OF_IOMMU_H
 #define __OF_IOMMU_H
 
+#include <linux/device.h>
 #include <linux/iommu.h>
 #include <linux/of.h>
+
+struct iommu_dma_mapping;
 
 #ifdef CONFIG_OF_IOMMU
 
@@ -11,6 +14,8 @@ extern int of_get_dma_window(struct device_node *dn, const char *prefix,
 			     size_t *size);
 
 extern void of_iommu_init(void);
+extern struct iommu_dma_mapping *of_iommu_configure(struct device *dev);
+extern void of_iommu_deconfigure(struct kref *kref);
 
 #else
 
@@ -22,6 +27,11 @@ static inline int of_get_dma_window(struct device_node *dn, const char *prefix,
 }
 
 static inline void of_iommu_init(void) { }
+static inline struct iommu_dma_mapping *of_iommu_configure(struct device *dev)
+{
+	return NULL;
+}
+static inline void of_iommu_deconfigure(struct kref *kref) { }
 
 #endif	/* CONFIG_OF_IOMMU */
 

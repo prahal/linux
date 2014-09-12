@@ -18,9 +18,11 @@
  */
 
 #include <linux/export.h>
+#include <linux/iommu.h>
 #include <linux/limits.h>
 #include <linux/of.h>
 #include <linux/of_iommu.h>
+#include <linux/slab.h>
 
 /**
  * of_get_dma_window - Parse *dma-window property and returns 0 if found.
@@ -89,6 +91,74 @@ int of_get_dma_window(struct device_node *dn, const char *prefix, int index,
 	return 0;
 }
 EXPORT_SYMBOL_GPL(of_get_dma_window);
+
+struct iommu_dma_mapping *of_iommu_configure(struct device *dev)
+{
+	struct of_phandle_args iommu_spec;
+	struct iommu_dma_mapping *mapping;
+	struct device_node *np;
+	struct iommu_data *iommu = NULL;
+	int idx = 0;
+
+	/*
+	 * We don't currently walk up the tree looking for a parent IOMMU.
+	 * See the `Notes:' section of
+	 * Documentation/devicetree/bindings/iommu/iommu.txt
+	 */
+	while (!of_parse_phandle_with_args(dev->of_node, "iommus",
+					   "#iommu-cells", idx,
+					   &iommu_spec)) {
+		struct iommu_data *data;
+
+		np = iommu_spec.np;
+		data = of_iommu_get_data(np);
+
+		if (!data || !data->ops || !data->ops->of_xlate)
+			goto err_put_node;
+
+		if (!iommu) {
+			iommu = data;
+		} else if (iommu != data) {
+			/* We don't currently support multi-IOMMU masters */
+			pr_warn("Rejecting device %s with multiple IOMMU instances\n",
+				dev_name(dev));
+			goto err_put_node;
+		}
+
+		if (!data->ops->of_xlate(dev, &iommu_spec))
+			goto err_put_node;
+
+		of_node_put(np);
+		idx++;
+	}
+
+	if (!iommu)
+		return NULL;
+
+	mapping = kzalloc(sizeof(*mapping), GFP_KERNEL);
+	if (!mapping)
+		return NULL;
+
+	kref_init(&mapping->kref);
+	INIT_LIST_HEAD(&mapping->node);
+	mapping->iommu = iommu;
+	return mapping;
+
+err_put_node:
+	of_node_put(np);
+	return NULL;
+}
+
+void of_iommu_deconfigure(struct kref *kref)
+{
+	struct iommu_dma_mapping *mapping, *curr, *next;
+
+	mapping = container_of(kref, struct iommu_dma_mapping, kref);
+	list_for_each_entry_safe(curr, next, &mapping->node, node) {
+		list_del(&curr->node);
+		kfree(curr);
+	}
+}
 
 void __init of_iommu_init(void)
 {

@@ -62,6 +62,14 @@ struct dma_map_ops {
 	int is_phys;
 };
 
+struct iommu_data;
+
+struct iommu_dma_mapping {
+	struct iommu_data *iommu;
+	struct list_head node;
+	struct kref kref;
+};
+
 #define DMA_BIT_MASK(n)	(((n) == 64) ? ~0ULL : ((1ULL<<(n))-1))
 
 #define DMA_MASK_NONE	0x0ULL
