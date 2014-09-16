@@ -1956,6 +1956,22 @@ int arm_iommu_attach_device(struct device *dev,
 {
 	int err;
 
+	/*
+	 * if device has no max_seg_size set, we assume that there is no limit
+	 * and force it to DMA_BIT_MASK(32) to always use contiguous mappings
+	 * in DMA address space
+	 */
+	if (!dev->dma_parms) {
+		dev->dma_parms = kzalloc(sizeof(*dev->dma_parms), GFP_KERNEL);
+		if (!dev->dma_parms)
+			return -ENOMEM;
+	}
+	if (!dev->dma_parms->max_segment_size) {
+		err = dma_set_max_seg_size(dev, DMA_BIT_MASK(32));
+		if (err)
+			return err;
+	}
+
 	err = iommu_attach_device(mapping->domain, dev);
 	if (err)
 		return err;
