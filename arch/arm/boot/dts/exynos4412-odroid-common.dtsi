@@ -193,11 +193,11 @@
 		};
 	};
 
-	mixer {
+	mixer@12C10000 {
 		status = "okay";
 	};
 
-	hdmi {
+	hdmi@12D00000 {
 		status = "okay";
 
 		hpd-gpio = <&gpx3 7 0>;
