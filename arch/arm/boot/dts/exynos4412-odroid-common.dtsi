@@ -110,6 +110,8 @@
 		samsung,dw-mshc-ddr-timing = <1 2>;
 		bus-width = <8>;
 		cap-mmc-highspeed;
+
+		samsung,dw-mshc-hwreset-gpio = <&gpk1 2 1>;
 	};
 
 	watchdog@10060000 {
