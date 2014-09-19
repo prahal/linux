@@ -461,6 +461,10 @@
 		domain-always-on;
 	};
 
+	isp-power-domain@10023CA0 {
+		domain-always-on;
+	};
+
 	exynos-usbphy@125B0000 {
 		status = "okay";
 	};
