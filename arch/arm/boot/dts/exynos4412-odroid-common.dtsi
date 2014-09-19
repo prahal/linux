@@ -109,6 +109,10 @@
 		};
 	};
 
+	isp-power-domain@10023CA0 {
+		domain-always-on;
+	};
+
 	thermal-zones {
 		cpu_thermal: cpu-thermal {
 			cooling-maps {
