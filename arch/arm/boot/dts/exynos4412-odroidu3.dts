@@ -33,6 +33,10 @@
 	};
 };
 
+&emmc {
+	vmmc-supply = <&ldo22_reg>;
+};
+
 &usb3503 {
 	clock-names = "refclk";
 	clocks = <&pmu_system_controller 0>;
