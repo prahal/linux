@@ -103,6 +103,9 @@
 	status = "okay";
 };
 
+&mshc_0 {
+	vmmc-supply = <&ldo22_reg>;
+};
 
 &usb3503 {
 	clock-names = "refclk";

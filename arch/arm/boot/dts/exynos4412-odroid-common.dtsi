@@ -566,8 +566,7 @@
 &mshc_0 {
 	pinctrl-0 = <&sd4_clk &sd4_cmd &sd4_bus4 &sd4_bus8>;
 	pinctrl-names = "default";
-	vmmc-supply = <&buck8_reg>;
-	vqmmc-supply = <&ldo20_reg>
+	vqmmc-supply = <&ldo20_reg>;
 	mmc-pwrseq = <&emmc_pwrseq>;
 	status = "okay";
 
