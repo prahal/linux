@@ -47,6 +47,11 @@ static const struct snd_soc_dapm_widget odroidx2_dapm_widgets[] = {
 	SND_SOC_DAPM_MIC("DMIC", NULL),
 };
 
+static const struct snd_soc_dapm_widget odroidu2_dapm_widgets[] = {
+	SND_SOC_DAPM_HP("Headphone Jack", NULL),
+	SND_SOC_DAPM_MIC("DMIC", NULL),
+};
+
 static const struct snd_soc_dapm_widget odroidu3_dapm_widgets[] = {
 	SND_SOC_DAPM_HP("Headphone Jack", NULL),
 	SND_SOC_DAPM_SPK("Speakers", NULL),
@@ -75,6 +80,11 @@ static const struct odroidx2_drv_data odroidx2_drvdata = {
 	.num_dapm_widgets	= ARRAY_SIZE(odroidx2_dapm_widgets),
 };
 
+static const struct odroidx2_drv_data odroidu2_drvdata = {
+	.dapm_widgets		= odroidu2_dapm_widgets,
+	.num_dapm_widgets	= ARRAY_SIZE(odroidu2_dapm_widgets),
+};
+
 static const struct odroidx2_drv_data odroidu3_drvdata = {
 	.dapm_widgets		= odroidu3_dapm_widgets,
 	.num_dapm_widgets	= ARRAY_SIZE(odroidu3_dapm_widgets),
@@ -84,6 +94,9 @@ static const struct of_device_id odroidx2_audio_of_match[] = {
 	{
 		.compatible	= "samsung,odroidx2-audio",
 		.data		= &odroidx2_drvdata,
+	}, {
+		.compatible	= "samsung,odroidu2-audio",
+		.data		= &odroidu2_drvdata,
 	}, {
 		.compatible	= "samsung,odroidu3-audio",
 		.data		= &odroidu3_drvdata,
