@@ -1,0 +1,36 @@
+/*
+ * Hardkernel's Exynos4412 based ODROID-U2 board device tree source
+ *
+ * Copyright (c) 2014 Marek Szyprowski <m.szyprowski@samsung.com>
+ *
+ * Device tree source file for Hardkernel's ODROID-U2 board which is based
+ * on Samsung's Exynos4412 SoC.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+*/
+
+#include "exynos4412-odroidu3.dts"
+
+/ {
+	model = "Hardkernel ODROID-U2 board based on Exynos4412";
+	compatible = "hardkernel,odroid-u2", "samsung,exynos4412", "samsung,exynos4";
+
+};
+
+&sound {
+	simple-audio-card,name = "Odroid-U2";
+	simple-audio-card,widgets =
+		"Headphone", "Headphone Jack",
+		"Microphone", "DMIC";
+	simple-audio-card,routing =
+		"Headphone Jack", "HPL",
+		"Headphone Jack", "HPR",
+		"Headphone Jack", "MICBIAS",
+		"IN1", "DMIC",
+		"IN2", "DMIC",
+		"DMIC", "DMICL",
+		"DMIC", "DMICR";
+};
+
