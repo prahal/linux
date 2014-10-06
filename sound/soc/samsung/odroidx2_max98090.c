@@ -62,7 +62,7 @@ static const struct snd_soc_dapm_widget odroidx2_dapm_widgets[] = {
 
 static const struct snd_soc_dapm_widget odroidu3_dapm_widgets[] = {
 	SND_SOC_DAPM_HP("Headphone Jack", NULL),
-	SND_SOC_DAPM_SPK("Speakers", NULL),
+	SND_SOC_DAPM_MIC("DMIC", NULL),
 };
 
 static struct snd_soc_dai_link odroidx2_dai[] = {
