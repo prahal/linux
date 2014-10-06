@@ -79,7 +79,8 @@
 		"Headphone Jack", "HPL",
 		"Headphone Jack", "HPR",
 		"Headphone Jack", "MICBIAS",
-		"IN1", "Headphone Jack",
-		"Speakers", "SPKL",
-		"Speakers", "SPKR";
+		"IN1", "DMIC",
+		"IN2", "DMIC",
+		"DMIC", "DMICL",
+		"DMIC", "DMICR";
 };
