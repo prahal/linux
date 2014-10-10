@@ -2170,12 +2170,17 @@ pl330_dst_addr_in_desc(struct dma_pl330_desc *desc, unsigned int dar)
 		(dar <= (desc->px.dst_addr + desc->px.bytes)));
 }
 
-static unsigned int pl330_tx_residue(struct dma_chan *chan)
+static unsigned int pl330_tx_residue(struct dma_chan *chan,
+				struct dma_tx_state *txstate)
 {
 	struct dma_pl330_chan *pch = to_pchan(chan);
-	void __iomem *regs = pch->dmac->pif.base;
-	struct pl330_thread *thrd = pch->pl330_chid;
+	void __iomem *regs = pch->dmac->base;
+	struct pl330_thread *thrd = pch->thread;
 	struct dma_pl330_desc *desc;
+	bool found = false;
+	bool last = false;
+	bool last_done = false;
+	int i = 0;
 	unsigned int sar, dar;
 	unsigned int residue = 0;
 	unsigned long flags;
@@ -2187,17 +2192,37 @@ static unsigned int pl330_tx_residue(struct dma_chan *chan)
 
 	/* Find the desc related to the current buffer. */
 	list_for_each_entry(desc, &pch->work_list, node) {
+		/* The range include the used item. */
+		if (last) last_done = true;
+		if (last_done) break;
+		if (desc->txd.cookie == txstate->used) last = true;
+
+		if (desc->status == PREP) {
+			residue += desc->px.bytes;
+			continue;
+		}
+
+		/* There can be a most two BUSY desc.
+		 * Only the first might be partially completed. */
+		if (desc->status != BUSY) break;
+
+		if (found) {
+			residue += desc->px.bytes;
+			continue;
+		}
+
 		if (desc->rqcfg.src_inc && pl330_src_addr_in_desc(desc, sar)) {
-			residue = desc->px.bytes - (sar - desc->px.src_addr);
-			goto found_unlock;
+			residue += desc->px.bytes - (sar - desc->px.src_addr);
+			found = true;
+			continue;
 		}
 		if (desc->rqcfg.dst_inc && pl330_dst_addr_in_desc(desc, dar)) {
-			residue = desc->px.bytes - (dar - desc->px.dst_addr);
-			goto found_unlock;
+			residue += desc->px.bytes - (dar - desc->px.dst_addr);
+			found = true;
+			continue;
 		}
 	}
 
-found_unlock:
 	spin_unlock_irqrestore(&pch->lock, flags);
 
 	return residue;
@@ -2210,8 +2235,8 @@ pl330_tx_status(struct dma_chan *chan, dma_cookie_t cookie,
 	enum dma_status ret;
 
 	ret = dma_cookie_status(chan, cookie, txstate);
-	if (ret != DMA_SUCCESS) /* Not complete, check amount left. */
-		dma_set_residue(txstate, pl330_tx_residue(chan));
+	if (ret != DMA_COMPLETE) /* Not complete, check amount left. */
+		dma_set_residue(txstate, pl330_tx_residue(chan, txstate));
 
 	return ret;
 }
@@ -2640,7 +2665,7 @@ static int pl330_dma_device_slave_caps(struct dma_chan *dchan,
 	caps->directions = BIT(DMA_DEV_TO_MEM) | BIT(DMA_MEM_TO_DEV);
 	caps->cmd_pause = false;
 	caps->cmd_terminate = true;
-	caps->residue_granularity = DMA_RESIDUE_GRANULARITY_DESCRIPTOR;
+	caps->residue_granularity = DMA_RESIDUE_GRANULARITY_BURST;
 
 	return 0;
 }
