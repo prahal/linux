@@ -2,6 +2,7 @@
 #include "perf_regs.h"
 #include "thread.h"
 #include "map.h"
+#include "debug.h"
 #include "event.h"
 #include "debug.h"
 #include "tests/tests.h"
