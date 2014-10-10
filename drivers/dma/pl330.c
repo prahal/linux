@@ -2180,7 +2180,6 @@ static unsigned int pl330_tx_residue(struct dma_chan *chan,
 	bool found = false;
 	bool last = false;
 	bool last_done = false;
-	int i = 0;
 	unsigned int sar, dar;
 	unsigned int residue = 0;
 	unsigned long flags;
