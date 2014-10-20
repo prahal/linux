@@ -157,6 +157,7 @@ struct iommu_ops {
 #define IOMMU_GROUP_NOTIFY_UNBIND_DRIVER	5 /* Pre Driver unbind */
 #define IOMMU_GROUP_NOTIFY_UNBOUND_DRIVER	6 /* Post Driver unbind */
 
+extern int iommu_init(void);
 extern int bus_set_iommu(struct bus_type *bus, const struct iommu_ops *ops);
 extern bool iommu_present(struct bus_type *bus);
 extern bool iommu_capable(struct bus_type *bus, enum iommu_cap cap);
@@ -260,6 +261,8 @@ static inline int report_iommu_fault(struct iommu_domain *domain,
 
 struct iommu_ops {};
 struct iommu_group {};
+
+static inline int iommu_init(void) { return 0; }
 
 static inline bool iommu_present(struct bus_type *bus)
 {
