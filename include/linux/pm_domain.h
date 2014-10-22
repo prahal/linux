@@ -261,6 +261,8 @@ typedef struct generic_pm_domain *(*genpd_xlate_t)(struct of_phandle_args *args,
 						void *data);
 
 #ifdef CONFIG_PM_GENERIC_DOMAINS_OF
+extern void of_genpd_init(void);
+
 int __of_genpd_add_provider(struct device_node *np, genpd_xlate_t xlate,
 			void *data);
 void of_genpd_del_provider(struct device_node *np);
@@ -274,6 +276,8 @@ struct generic_pm_domain *__of_genpd_xlate_onecell(
 
 int genpd_dev_pm_attach(struct device *dev);
 #else /* !CONFIG_PM_GENERIC_DOMAINS_OF */
+static inline void of_genpd_init(void) { }
+
 static inline int __of_genpd_add_provider(struct device_node *np,
 					genpd_xlate_t xlate, void *data)
 {
@@ -311,5 +315,26 @@ static inline int dev_pm_domain_attach(struct device *dev, bool power_on)
 }
 static inline void dev_pm_domain_detach(struct device *dev, bool power_off) {}
 #endif
+
+/* FIXME: define the fields - properties and handlers */
+struct genpd_data {
+};
+
+static inline void of_genpd_set_data(struct device_node *np,
+				struct genpd_data *data)
+{
+	np->data = data;
+}
+
+static inline struct genpd_data *of_genpd_get_data(struct device_node *np)
+{
+	return np->data;
+}
+
+
+extern struct of_device_id __genpd_of_table;
+typedef int (*of_genpd_init_fn)(struct device_node *);
+#define GENPD_OF_DECLARE(name, compat, fn) \
+	_OF_DECLARE(genpd, name, compat, fn, of_genpd_init_fn)
 
 #endif /* _LINUX_PM_DOMAIN_H */

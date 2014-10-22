@@ -2194,6 +2194,21 @@ int genpd_dev_pm_attach(struct device *dev)
 	return 0;
 }
 EXPORT_SYMBOL_GPL(genpd_dev_pm_attach);
+
+void __init of_genpd_init(void)
+{
+	struct device_node *np;
+	const struct of_device_id *match, *matches = &__genpd_of_table;
+
+	for_each_matching_node_and_match(np, matches, &match) {
+		const of_genpd_init_fn init_fn = match->data;
+
+		if (init_fn(np))
+			pr_err("Failed to initialise generic power domain %s\n",
+				of_node_full_name(np));
+	}
+}
+
 #endif
 
 

@@ -18,6 +18,7 @@
 #include <linux/bootmem.h>
 #include <linux/seq_file.h>
 #include <linux/screen_info.h>
+#include <linux/pm_domain.h>
 #include <linux/iommu.h>
 #include <linux/of_iommu.h>
 #include <linux/of_platform.h>
@@ -808,6 +809,7 @@ static int __init customize_machine(void)
 	 * machine from the device tree, if no callback is provided,
 	 * otherwise we would always need an init_machine callback.
 	 */
+	of_genpd_init();
 	iommu_init();
 	of_iommu_init();
 	if (machine_desc->init_machine)

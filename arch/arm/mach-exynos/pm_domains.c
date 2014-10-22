@@ -26,6 +26,7 @@
 #define INT_LOCAL_PWR_EN	0x7
 #define MAX_CLK_PER_DOMAIN	4
 
+
 /*
  * Exynos specific wrapper around the generic power domain
  */
@@ -105,66 +106,91 @@ static int exynos_pd_power_off(struct generic_pm_domain *domain)
 	return exynos_pd_power(domain, false);
 }
 
-static __init int exynos4_pm_init_power_domain(void)
+static __init int exynos4_pm_init_power_domain(struct device_node *np)
 {
 	struct platform_device *pdev;
-	struct device_node *np;
+	struct dev_power_governor *gov = NULL;
+	struct exynos_pm_domain *pd;
+	int on, i;
+	struct device *dev;
 
-	for_each_compatible_node(np, NULL, "samsung,exynos4210-pd") {
-		struct dev_power_governor *gov = NULL;
-		struct exynos_pm_domain *pd;
-		int on, i;
-		struct device *dev;
+	pdev = of_find_device_by_node(np);
+	dev = &pdev->dev;
+	if (!dev) {
+		pr_err("%s: no device\n",
+				__func__);
+		return -ENODEV;
+	}
 
-		pdev = of_find_device_by_node(np);
-		dev = &pdev->dev;
 
-		pd = kzalloc(sizeof(*pd), GFP_KERNEL);
-		if (!pd) {
-			pr_err("%s: failed to allocate memory for domain\n",
-					__func__);
-			return -ENOMEM;
+	pd = kzalloc(sizeof(*pd), GFP_KERNEL);
+	if (!pd) {
+		pr_err("%s: failed to allocate memory for domain\n",
+				__func__);
+		return -ENOMEM;
+	}
+
+	if (of_property_read_bool(np, "domain-always-on"))
+		gov = &pm_domain_always_on_gov;
+
+	pd->pd.name = kstrdup(np->name, GFP_KERNEL);
+	pd->name = pd->pd.name;
+	pd->base = of_iomap(np, 0);
+	pd->pd.power_off = exynos_pd_power_off;
+	pd->pd.power_on = exynos_pd_power_on;
+
+	pd->oscclk = clk_get(dev, "oscclk");
+	if (IS_ERR(pd->oscclk))
+		goto no_clk;
+
+	for (i = 0; i < MAX_CLK_PER_DOMAIN; i++) {
+		char clk_name[8];
+
+		snprintf(clk_name, sizeof(clk_name), "clk%d", i);
+		pd->clk[i] = clk_get(dev, clk_name);
+		if (IS_ERR(pd->clk[i]))
+			break;
+		snprintf(clk_name, sizeof(clk_name), "pclk%d", i);
+		pd->pclk[i] = clk_get(dev, clk_name);
+		if (IS_ERR(pd->pclk[i])) {
+			clk_put(pd->clk[i]);
+			pd->clk[i] = ERR_PTR(-EINVAL);
+			break;
 		}
+	}
 
-		if (of_property_read_bool(np, "domain-always-on"))
-			gov = &pm_domain_always_on_gov;
-
-		pd->pd.name = kstrdup(np->name, GFP_KERNEL);
-		pd->name = pd->pd.name;
-		pd->base = of_iomap(np, 0);
-		pd->pd.power_off = exynos_pd_power_off;
-		pd->pd.power_on = exynos_pd_power_on;
-
-		pd->oscclk = clk_get(dev, "oscclk");
-		if (IS_ERR(pd->oscclk))
-			goto no_clk;
-
-		for (i = 0; i < MAX_CLK_PER_DOMAIN; i++) {
-			char clk_name[8];
-
-			snprintf(clk_name, sizeof(clk_name), "clk%d", i);
-			pd->clk[i] = clk_get(dev, clk_name);
-			if (IS_ERR(pd->clk[i]))
-				break;
-			snprintf(clk_name, sizeof(clk_name), "pclk%d", i);
-			pd->pclk[i] = clk_get(dev, clk_name);
-			if (IS_ERR(pd->pclk[i])) {
-				clk_put(pd->clk[i]);
-				pd->clk[i] = ERR_PTR(-EINVAL);
-				break;
-			}
-		}
-
-		if (IS_ERR(pd->clk[0]))
-			clk_put(pd->oscclk);
+	if (IS_ERR(pd->clk[0]))
+		clk_put(pd->oscclk);
 
 no_clk:
-		on = __raw_readl(pd->base + 0x4) & INT_LOCAL_PWR_EN;
+	on = __raw_readl(pd->base + 0x4) & INT_LOCAL_PWR_EN;
 
-		pm_genpd_init(&pd->pd, gov, !on);
-		of_genpd_add_provider_simple(np, &pd->pd);
-	}
+	pm_genpd_init(&pd->pd, gov, !on);
+	of_genpd_add_provider_simple(np, &pd->pd);
 
 	return 0;
 }
-arch_initcall(exynos4_pm_init_power_domain);
+
+static struct genpd_data exynos_of_data = {
+};
+
+static int __init exynos4_genpd_of_setup(struct device_node *np)
+{
+	struct platform_device *pdev;
+	int ret;
+
+	pdev = of_platform_device_create(np, NULL, platform_bus_type.dev_root);
+	if (IS_ERR(pdev))
+		return PTR_ERR(pdev);
+
+
+	ret = exynos4_pm_init_power_domain(np);
+
+	of_genpd_set_data(np, &exynos_of_data);
+	return ret;
+}
+
+
+
+GENPD_OF_DECLARE(exynos4_genpd_of, "samsung,exynos4210-pd",
+	       exynos4_genpd_of_setup);
