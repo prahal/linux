@@ -116,9 +116,16 @@ int drm_iommu_attach_device(struct drm_device *drm_dev,
 	 * to allocate physial memory and map it with iommu table.
 	 * If iommu attach succeeded, the sub driver would have dma_ops
 	 * for iommu and also all sub drivers have same dma_ops.
+	 *
+	 * Check for iommu on the subdrv to force iommu dma ops to the subdrv.
+	 * drm is above a mix of iommu and non iommu subdrv.
 	 */
-	if (!dev->archdata.dma_ops)
-		dev->archdata.dma_ops = subdrv_dev->archdata.dma_ops;
+	if (subdrv_dev->archdata.iommu)
+		if (!dev->archdata.dma_ops)
+			dev->archdata.dma_ops = subdrv_dev->archdata.dma_ops;
+
+	if (dev->archdata.dma_ops)
+		subdrv_dev->archdata.dma_ops = dev->archdata.dma_ops;
 
 	return 0;
 }
