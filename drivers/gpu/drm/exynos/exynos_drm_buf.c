@@ -49,7 +49,8 @@ static int lowlevel_buffer_allocate(struct drm_device *dev,
 		attr = DMA_ATTR_NON_CONSISTENT;
 
 	dma_set_attr(attr, &buf->dma_attrs);
-	dma_set_attr(DMA_ATTR_NO_KERNEL_MAPPING, &buf->dma_attrs);
+	if (is_drm_iommu_supported(dev))
+		dma_set_attr(DMA_ATTR_NO_KERNEL_MAPPING, &buf->dma_attrs);
 
 	nr_pages = buf->size >> PAGE_SHIFT;
 
