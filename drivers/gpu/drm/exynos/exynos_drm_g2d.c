@@ -414,6 +414,12 @@ static dma_addr_t *g2d_userptr_get_dma_addr(struct drm_device *drm_dev,
 	unsigned long start, end;
 	unsigned int npages, offset;
 	int ret;
+	unsigned long dma_align = dma_get_cache_alignment();
+
+	if (!IS_ALIGNED(userptr | size, dma_align)) {
+		pr_debug("user data must be aligned to %lu bytes\n", dma_align);
+		return ERR_PTR(-EINVAL);
+	}
 
 	if (!size) {
 		DRM_ERROR("invalid userptr size.\n");
