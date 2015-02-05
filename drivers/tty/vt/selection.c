@@ -363,7 +363,6 @@ int paste_selection(struct tty_struct *tty)
 		pasted += count;
 	}
 	remove_wait_queue(&vc->paste_wait, &wait);
-	__set_current_state(TASK_RUNNING);
 
 	tty_buffer_unlock_exclusive(&vc->port);
 	tty_ldisc_deref(ld);
