@@ -17,6 +17,7 @@ comment "Multimedia core support"
 
 config CEC
 	tristate "CEC API (EXPERIMENTAL)"
+	depends on RC_CORE
 	---help---
 	  Enable the CEC API.
 
