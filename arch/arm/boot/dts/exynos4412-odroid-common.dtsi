@@ -324,6 +324,9 @@
 
 &g2d {
 	status = "okay";
+
+	assigned-clocks = <&clock CLK_SCLK_FIMG2D>;
+	assigned-clock-rates = <220000000>;
 };
 
 &hdmi {
