@@ -418,6 +418,8 @@ struct mali_gpu_device_data {
 
 	/* Fuction that platform callback for freq tunning, needed when POWER_PERFORMANCE_POLICY enabled*/
 	int (*set_freq_callback)(unsigned int mhz);
+
+	struct mali_resource resource[MALI_RESOURCE_INDEX_LAST];
 };
 
 /** @brief MALI GPU power down using MALI in-built PMU
