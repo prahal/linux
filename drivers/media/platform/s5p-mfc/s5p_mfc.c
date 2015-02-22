@@ -1032,6 +1032,7 @@ static struct device *s5p_mfc_alloc_memdev(struct device *dev, const char *name)
 	child->bus = dev->bus;
 	child->coherent_dma_mask = dev->coherent_dma_mask;
 	child->dma_mask = dev->dma_mask;
+	child->release = of_reserved_mem_device_release;
 
 	if (device_add(child) == 0) {
 		ret = of_reserved_mem_device_init(child);
@@ -1043,9 +1044,9 @@ static struct device *s5p_mfc_alloc_memdev(struct device *dev, const char *name)
 	return NULL;
 }
 
-void s5p_mfc_free_memdev(struct device *dev)
+void s5p_mfc_free_dev(struct device *dev)
 {
-	of_reserved_mem_device_release(dev);
+	device_unregister(dev);
 	put_device(dev);
 }
 
@@ -1235,9 +1236,9 @@ static int s5p_mfc_remove(struct platform_device *pdev)
 	vb2_dma_contig_cleanup_ctx(dev->alloc_ctx[0]);
 	vb2_dma_contig_cleanup_ctx(dev->alloc_ctx[1]);
 	if (dev->mem_dev_l)
-		s5p_mfc_free_memdev(dev->mem_dev_l);
+		s5p_mfc_free_dev(dev->mem_dev_l);
 	if (dev->mem_dev_r)
-		s5p_mfc_free_memdev(dev->mem_dev_r);
+		s5p_mfc_free_dev(dev->mem_dev_r);
 
 	s5p_mfc_final_pm(dev);
 	return 0;
