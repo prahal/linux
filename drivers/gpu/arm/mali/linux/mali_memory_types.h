@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2013 ARM Limited. All rights reserved.
+ * Copyright (C) 2013-2014 ARM Limited. All rights reserved.
  * 
  * This program is free software and is provided to you under the terms of the GNU General Public License version 2
  * as published by the Free Software Foundation, and any use by you of this program is subject to the terms of such GNU licence.
@@ -11,13 +11,19 @@
 #ifndef __MALI_MEMORY_TYPES_H__
 #define __MALI_MEMORY_TYPES_H__
 
+#if defined(CONFIG_MALI400_UMP)
+#include "ump_kernel_interface.h"
+#endif
+
 typedef u32 mali_address_t;
 
 typedef enum mali_mem_type {
 	MALI_MEM_OS,
 	MALI_MEM_EXTERNAL,
 	MALI_MEM_DMA_BUF,
+	MALI_MEM_UMP,
 	MALI_MEM_BLOCK,
+	MALI_MEM_TYPE_MAX,
 } mali_mem_type;
 
 typedef struct mali_mem_os_mem {
@@ -35,6 +41,12 @@ typedef struct mali_mem_external {
 	dma_addr_t phys;
 	u32 size;
 } mali_mem_external;
+
+typedef struct mali_mem_ump {
+#if defined(CONFIG_MALI400_UMP)
+	ump_dd_handle handle;
+#endif
+} mali_mem_ump;
 
 typedef struct block_allocator_allocation {
 	/* The list will be released in reverse order */
@@ -75,6 +87,7 @@ typedef struct mali_mem_allocation {
 		mali_mem_os_mem os_mem;       /**< MALI_MEM_OS */
 		mali_mem_external ext_mem;    /**< MALI_MEM_EXTERNAL */
 		mali_mem_dma_buf dma_buf;     /**< MALI_MEM_DMA_BUF */
+		mali_mem_ump ump_mem;         /**< MALI_MEM_UMP */
 		mali_mem_block_mem block_mem; /**< MALI_MEM_BLOCK */
 	};
 
