@@ -37,7 +37,7 @@ typedef enum mali_power_mode_tag
  *
  * @return _MALI_OSK_ERR_OK on success otherwise, a suitable _mali_osk_errcode_t error.
  */
-_mali_osk_errcode_t mali_platform_init(void);
+int mali_platform_device_init(struct platform_device *device);
 
 /** @brief Platform specific deinitialisation of MALI
  *
@@ -45,7 +45,7 @@ _mali_osk_errcode_t mali_platform_init(void);
  *
  * @return _MALI_OSK_ERR_OK on success otherwise, a suitable _mali_osk_errcode_t error.
  */
-_mali_osk_errcode_t mali_platform_deinit(void);
+int mali_platform_device_deinit(struct platform_device *device);
 
 /** @brief Platform specific powerdown sequence of MALI
  *
