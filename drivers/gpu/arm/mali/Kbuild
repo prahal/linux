@@ -23,6 +23,7 @@ MALI_UPPER_HALF_SCHEDULING ?= 1
 MALI_ENABLE_CPU_CYCLES ?= 0
 MALI_PLATFORM = pegasus-m400
 MALI_PLATFORM_FILES = $(subst $(src)/,,$(wildcard $(src)/platform/$(MALI_PLATFORM)/*.c))
+EXTRA_DEFINES += -DMALI_FAKE_PLATFORM_DEVICE=1
 
 # For customer releases the Linux Device Drivers will be provided as ARM proprietary and GPL releases:
 # The ARM proprietary product will only include the license/proprietary directory
