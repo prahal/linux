@@ -140,6 +140,7 @@ static int exynos_drm_fbdev_create(struct drm_fb_helper *helper,
 	mode_cmd.pixel_format = drm_mode_legacy_fb_format(sizes->surface_bpp,
 							  sizes->surface_depth);
 
+	printk("%s : mode cmd pixel format %s\n", __func__, drm_get_format_name(mode_cmd.pixel_format));
 	mutex_lock(&dev->struct_mutex);
 
 	fbi = framebuffer_alloc(0, &pdev->dev);
