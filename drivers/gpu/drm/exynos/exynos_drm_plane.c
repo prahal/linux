@@ -125,6 +125,11 @@ void exynos_plane_mode_set(struct drm_plane *plane, struct drm_crtc *crtc,
 	exynos_plane->pitch = fb->pitches[0];
 	exynos_plane->pixel_format = fb->pixel_format;
 
+	if (exynos_plane->pixel_format == DRM_FORMAT_XRGB8888) {
+		printk("overlay px format %s\n", drm_get_format_name(exynos_plane->pixel_format));
+		dump_stack();
+	}
+
 	/* set plane range to be displayed. */
 	exynos_plane->crtc_x = crtc_x;
 	exynos_plane->crtc_y = crtc_y;
