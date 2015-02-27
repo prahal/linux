@@ -674,9 +674,9 @@ static void mixer_win_reset(struct mixer_context *ctx)
 	mixer_reg_write(res, MXR_LAYER_CFG, val);
 
 	/* setting background color */
-	mixer_reg_write(res, MXR_BG_COLOR0, 0x008080);
-	mixer_reg_write(res, MXR_BG_COLOR1, 0x008080);
-	mixer_reg_write(res, MXR_BG_COLOR2, 0x008080);
+	mixer_reg_write(res, MXR_BG_COLOR0, 0x108080);
+	mixer_reg_write(res, MXR_BG_COLOR1, 0x108080);
+	mixer_reg_write(res, MXR_BG_COLOR2, 0x108080);
 
 	/* setting graphical layers */
 	val  = MXR_GRP_CFG_COLOR_KEY_DISABLE; /* no blank key */
