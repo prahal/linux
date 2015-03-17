@@ -137,6 +137,63 @@ int vb2_get_contig_userptr(unsigned long vaddr, unsigned long size,
 EXPORT_SYMBOL_GPL(vb2_get_contig_userptr);
 
 /**
+ * vb2_create_pfnvec() - map virtual addresses to pfns
+ * @start:	Virtual user address where we start mapping
+ * @length:	Length of a range to map
+ * @write:	Should we map for writing into the area
+ *
+ * This function allocates and fills in a vector with pfns corresponding to
+ * virtual address range passed in arguments. If pfns have corresponding pages,
+ * page references are also grabbed to pin pages in memory. The function
+ * returns pointer to the vector on success and error pointer in case of
+ * failure. Returned vector needs to be freed via vb2_destroy_pfnvec().
+ */
+struct pinned_pfns *vb2_create_pfnvec(unsigned long start, unsigned long length,
+				      bool write)
+{
+	int ret;
+	unsigned long first, last;
+	unsigned long nr;
+	struct pinned_pfns *pfns;
+
+	first = start >> PAGE_SHIFT;
+	last = (start + length - 1) >> PAGE_SHIFT;
+	nr = last - first + 1;
+	pfns = pfns_vector_create(nr);
+	if (!pfns)
+		return ERR_PTR(-ENOMEM);
+	ret = get_vaddr_pfns(start, nr, write, 1, pfns);
+	if (ret < 0)
+		goto out_destroy;
+	/* We accept only complete set of PFNs */
+	if (ret != nr) {
+		ret = -EFAULT;
+		goto out_release;
+	}
+	return pfns;
+out_release:
+	put_vaddr_pfns(pfns);
+out_destroy:
+	pfns_vector_destroy(pfns);
+	return ERR_PTR(ret);
+}
+EXPORT_SYMBOL(vb2_create_pfnvec);
+
+/**
+ * vb2_destroy_pfnvec() - release vector of mapped pfns
+ * @pfns:	vector of pfns to release
+ *
+ * This releases references to all pages in the vector @pfns (if corresponding
+ * pfns are backed by pages) and frees the passed vector.
+ */
+void vb2_destroy_pfnvec(struct pinned_pfns *pfns)
+{
+	put_vaddr_pfns(pfns);
+	pfns_vector_destroy(pfns);
+}
+EXPORT_SYMBOL(vb2_destroy_pfnvec);
+
+/**
  * vb2_common_vm_open() - increase refcount of the vma
  * @vma:	virtual memory region for the mapping
  *
