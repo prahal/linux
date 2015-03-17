@@ -1197,6 +1197,44 @@ long get_user_pages_unlocked(struct task_struct *tsk, struct mm_struct *mm,
 		    int write, int force, struct page **pages);
 int get_user_pages_fast(unsigned long start, int nr_pages, int write,
 			struct page **pages);
+
+/* Container for pinned pfns / pages */
+struct pinned_pfns {
+	unsigned int nr_allocated_pfns;	/* Number of pfns we have space for */
+	unsigned int nr_pfns;		/* Number of pfns stored in pfns array */
+	unsigned int got_ref:1;		/* Did we pin pfns by getting page ref? */
+	unsigned int is_pages:1;	/* Does array contain pages or pfns? */
+	void *ptrs[0];			/* Array of pinned pfns / pages.
+					 * Use pfns_vector_pages() or
+					 * pfns_vector_pfns() for access */
+};
+
+struct pinned_pfns *pfns_vector_create(int nr_pfns);
+void pfns_vector_destroy(struct pinned_pfns *pfns);
+int get_vaddr_pfns(unsigned long start, int nr_pfns, int write, int force,
+		   struct pinned_pfns *pfns);
+void put_vaddr_pfns(struct pinned_pfns *pfns);
+int pfns_vector_to_pages(struct pinned_pfns *pfns);
+
+static inline int pfns_vector_count(struct pinned_pfns *pfns)
+{
+	return pfns->nr_pfns;
+}
+
+static inline struct page **pfns_vector_pages(struct pinned_pfns *pfns)
+{
+	if (!pfns->is_pages)
+		return NULL;
+	return (struct page **)(pfns->ptrs);
+}
+
+static inline unsigned long *pfns_vector_pfns(struct pinned_pfns *pfns)
+{
+	if (pfns->is_pages)
+		return NULL;
+	return (unsigned long *)(pfns->ptrs);
+}
+
 struct kvec;
 int get_kernel_pages(const struct kvec *iov, int nr_pages, int write,
 			struct page **pages);
