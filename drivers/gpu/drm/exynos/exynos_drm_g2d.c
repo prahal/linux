@@ -12,6 +12,7 @@
 #include <linux/err.h>
 #include <linux/interrupt.h>
 #include <linux/io.h>
+#include <linux/mm.h>
 #include <linux/platform_device.h>
 #include <linux/pm_runtime.h>
 #include <linux/slab.h>
@@ -190,10 +191,8 @@ struct g2d_cmdlist_userptr {
 	dma_addr_t		dma_addr;
 	unsigned long		userptr;
 	unsigned long		size;
-	struct page		**pages;
-	unsigned int		npages;
+	struct pinned_pfns	*pfns;
 	struct sg_table		*sgt;
-	struct vm_area_struct	*vma;
 	atomic_t		refcount;
 	bool			in_pool;
 	bool			out_of_list;
@@ -363,6 +362,7 @@ static void g2d_userptr_put_dma_addr(struct drm_device *drm_dev,
 {
 	struct g2d_cmdlist_userptr *g2d_userptr =
 					(struct g2d_cmdlist_userptr *)obj;
+	struct page **pages;
 
 	if (!obj)
 		return;
@@ -382,19 +382,21 @@ out:
 	exynos_gem_unmap_sgt_from_dma(drm_dev, g2d_userptr->sgt,
 					DMA_BIDIRECTIONAL);
 
-	exynos_gem_put_pages_to_userptr(g2d_userptr->pages,
-					g2d_userptr->npages,
-					g2d_userptr->vma);
+	pages = pfns_vector_pages(g2d_userptr->pfns);
+	if (pages) {
+		int i;
 
-	exynos_gem_put_vma(g2d_userptr->vma);
+		for (i = 0; i < pfns_vector_count(g2d_userptr->pfns); i++)
+			set_page_dirty_lock(pages[i]);
+	}
+	put_vaddr_pfns(g2d_userptr->pfns);
+	pfns_vector_destroy(g2d_userptr->pfns);
 
 	if (!g2d_userptr->out_of_list)
 		list_del_init(&g2d_userptr->list);
 
 	sg_free_table(g2d_userptr->sgt);
 	kfree(g2d_userptr->sgt);
-
-	drm_free_large(g2d_userptr->pages);
 	kfree(g2d_userptr);
 }
 
@@ -426,11 +428,10 @@ static dma_addr_t *g2d_userptr_get_dma_addr(struct drm_device *drm_dev,
 	struct exynos_drm_g2d_private *g2d_priv = file_priv->g2d_priv;
 	struct g2d_cmdlist_userptr *g2d_userptr;
 	struct g2d_data *g2d;
-	struct page **pages;
 	struct sg_table	*sgt;
-	struct vm_area_struct *vma;
 	unsigned long start, end;
 	unsigned int npages, offset;
+	struct pinned_pfns *pfns;
 	int ret;
 	unsigned long dma_align = dma_get_cache_alignment();
 	unsigned long contig_size;
@@ -486,59 +487,32 @@ static dma_addr_t *g2d_userptr_get_dma_addr(struct drm_device *drm_dev,
 	offset = userptr & ~PAGE_MASK;
 	end = PAGE_ALIGN(userptr + size);
 	npages = (end - start) >> PAGE_SHIFT;
-	g2d_userptr->npages = npages;
-
-	pages = drm_calloc_large(npages, sizeof(struct page *));
-	if (!pages) {
-		DRM_ERROR("failed to allocate pages.\n");
-		ret = -ENOMEM;
+	pfns = g2d_userptr->pfns = pfns_vector_create(npages);
+	if (!pfns)
 		goto err_free;
-	}
 
-	down_read(&current->mm->mmap_sem);
-	vma = find_vma(current->mm, userptr);
-	if (!vma) {
-		up_read(&current->mm->mmap_sem);
-		DRM_ERROR("failed to get vm region.\n");
-		ret = -EFAULT;
-		goto err_free_pages;
-	}
-
-	if (vma->vm_end < userptr + size) {
-		up_read(&current->mm->mmap_sem);
-		DRM_ERROR("vma is too small.\n");
-		ret = -EFAULT;
-		goto err_free_pages;
-	}
-
-	g2d_userptr->vma = exynos_gem_get_vma(vma);
-	if (!g2d_userptr->vma) {
-		up_read(&current->mm->mmap_sem);
-		DRM_ERROR("failed to copy vma.\n");
-		ret = -ENOMEM;
-		goto err_free_pages;
-	}
-
-
-	ret = exynos_gem_get_pages_from_userptr(start & PAGE_MASK,
-						npages, pages, vma);
-	if (ret < 0) {
-		up_read(&current->mm->mmap_sem);
+	ret = get_vaddr_pfns(start, npages, 1, 1, pfns);
+	if (ret != npages) {
 		DRM_ERROR("failed to get user pages from userptr.\n");
-		goto err_put_vma;
+		if (ret < 0)
+			goto err_destroy_pfns;
+		ret = -EFAULT;
+		goto err_put_pfns;
 	}
 
-	up_read(&current->mm->mmap_sem);
-	g2d_userptr->pages = pages;
+	if (pfns_vector_to_pages(pfns) < 0) {
+		ret = -EFAULT;
+		goto err_put_pfns;
+	}
 
 	sgt = kzalloc(sizeof(*sgt), GFP_KERNEL);
 	if (!sgt) {
 		ret = -ENOMEM;
-		goto err_free_userptr;
+		goto err_put_pfns;
 	}
 
-	ret = sg_alloc_table_from_pages(sgt, pages, npages, offset,
-					size, GFP_KERNEL);
+	ret = sg_alloc_table_from_pages(sgt, pfns_vector_pages(pfns), npages,
+					offset, size, GFP_KERNEL);
 	if (ret < 0) {
 		DRM_ERROR("failed to get sgt from pages.\n");
 		goto err_free_sgt;
@@ -588,16 +562,11 @@ err_sg_free_table:
 err_free_sgt:
 	kfree(sgt);
 
-err_free_userptr:
-	exynos_gem_put_pages_to_userptr(g2d_userptr->pages,
-					g2d_userptr->npages,
-					g2d_userptr->vma);
+err_put_pfns:
+	put_vaddr_pfns(pfns);
 
-err_put_vma:
-	exynos_gem_put_vma(g2d_userptr->vma);
-
-err_free_pages:
-	drm_free_large(pages);
+err_destroy_pfns:
+	pfns_vector_destroy(pfns);
 
 err_free:
 	kfree(g2d_userptr);
