@@ -526,7 +526,7 @@ static void mixer_graph_buffer(struct mixer_context *ctx, int win)
 	unsigned int x_ratio = 0, y_ratio = 0;
 	unsigned int src_x_offset, src_y_offset, dst_x_offset, dst_y_offset;
 	dma_addr_t dma_addr;
-	unsigned int fmt;
+	unsigned int fmt, blend;
 	u32 val;
 
 	plane = &ctx->planes[win];
@@ -536,15 +536,26 @@ static void mixer_graph_buffer(struct mixer_context *ctx, int win)
 	#define ARGB4444 6
 	#define ARGB8888 7
 
-	switch (plane->bpp) {
-	case 16:
+	switch (plane->pixel_format) {
+	case DRM_FORMAT_ARGB4444:
 		fmt = ARGB4444;
+		blend = 1;
 		break;
-	case 32:
+
+	case DRM_FORMAT_ARGB8888:
 		fmt = ARGB8888;
+		blend = 1;
 		break;
+
+	case DRM_FORMAT_XRGB8888:
+		fmt = ARGB8888;
+		blend = 0;
+		break;
+
 	default:
 		fmt = ARGB8888;
+		blend = 0;
+		break;
 	}
 
 	/* check if mixer supports requested scaling setup */
@@ -576,6 +587,16 @@ static void mixer_graph_buffer(struct mixer_context *ctx, int win)
 	/* setup geometry */
 	mixer_reg_write(res, MXR_GRAPHIC_SPAN(win),
 			plane->pitch / (plane->bpp >> 3));
+
+	if (blend) {
+		val = MXR_GRP_CFG_BLEND_PRE_MUL;
+		val |= MXR_GRP_CFG_PIXEL_BLEND_EN;
+	} else {
+		val = 0;
+	}
+	mixer_reg_writemask(res, MXR_GRAPHIC_CFG(win), val,
+			    MXR_GRP_CFG_BLEND_PRE_MUL
+			    | MXR_GRP_CFG_PIXEL_BLEND_EN);
 
 	/* setup display size */
 	if (ctx->mxr_ver == MXR_VER_128_0_0_184 &&
