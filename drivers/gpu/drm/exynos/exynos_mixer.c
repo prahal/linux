@@ -687,7 +687,7 @@ static void mixer_win_reset(struct mixer_context *ctx)
 	mixer_reg_write(res, MXR_GRAPHIC_CFG(0), val);
 
 	/* Blend layer 1 into layer 0 */
-	val |= MXR_GRP_CFG_BLEND_PRE_MUL;
+	val = MXR_GRP_CFG_BLEND_PRE_MUL;
 	val |= MXR_GRP_CFG_PIXEL_BLEND_EN;
 	mixer_reg_write(res, MXR_GRAPHIC_CFG(1), val);
 
