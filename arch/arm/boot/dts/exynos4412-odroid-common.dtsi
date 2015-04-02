@@ -168,9 +168,8 @@
 	g2d@10800000 {
 		status = "okay";
 
-		/* Clock the engine with 400MHz. */
 		assigned-clocks = <&clock CLK_SCLK_FIMG2D>;
-		assigned-clock-rates = <440000000>;
+		assigned-clock-rates = <220000000>;
 	};
 
 	camera {
