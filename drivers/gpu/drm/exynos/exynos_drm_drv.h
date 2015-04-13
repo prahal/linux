@@ -79,7 +79,6 @@ extern void exynos4412_qos(u8 tm, u8 ac);
  * @color_key: color key on or off.
  * @local_path: in case of lcd type, local path mode on or off.
  * @transparency: transparency on or off.
- * @activated: activated or not.
  * @enabled: enabled or not.
  * @resume: to resume or not.
  *
@@ -116,7 +115,6 @@ struct exynos_drm_plane {
 	bool color_key:1;
 	bool local_path:1;
 	bool transparency:1;
-	bool activated:1;
 	bool enabled:1;
 	bool resume:1;
 };
