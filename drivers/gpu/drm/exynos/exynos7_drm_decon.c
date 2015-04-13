@@ -42,6 +42,11 @@
 
 #define WINDOWS_NR	2
 
+static const uint32_t decon_formats[] = {
+	DRM_FORMAT_XRGB8888,
+	DRM_FORMAT_ARGB8888,
+};
+
 struct decon_context {
 	struct device			*dev;
 	struct drm_device		*drm_dev;
@@ -664,6 +669,8 @@ static int decon_bind(struct device *dev, struct device *master, void *data)
 	}
 
 	plane_config.possible_crtcs = 1 << ctx->pipe;
+	plane_config.pixel_formats = decon_formats;
+	plane_config.num_pixel_formats = ARRAY_SIZE(decon_formats);
 
 	for (i = 0; i < WINDOWS_NR; i++) {
 		plane_config.type = (i == ctx->default_win) ?
