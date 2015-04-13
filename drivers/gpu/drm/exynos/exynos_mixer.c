@@ -137,6 +137,19 @@ static const uint32_t vp_formats[] = {
 	DRM_FORMAT_NV12,
 };
 
+static inline bool is_vp_format(struct exynos_drm_plane *plane)
+{
+	struct drm_plane_state *state = plane->base.state;
+	struct drm_framebuffer *fb = state->fb;
+
+	switch (fb->pixel_format) {
+	case DRM_FORMAT_NV12:
+		return true;
+	default:
+		return false;
+	}
+}
+
 static inline u32 vp_reg_read(struct mixer_resources *res, u32 reg_id)
 {
 	return readl(res->vp_regs + reg_id);
@@ -950,7 +963,7 @@ static void mixer_update_plane(struct exynos_drm_crtc *crtc,
 	if (!test_bit(MXR_BIT_POWERED, &mixer_ctx->flags))
 		return;
 
-	if (plane->zpos > 1 && mixer_ctx->vp_enabled)
+	if (is_vp_format(plane))
 		vp_video_buffer(mixer_ctx, plane);
 	else
 		mixer_graph_buffer(mixer_ctx, plane);
