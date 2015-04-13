@@ -133,6 +133,16 @@ static const uint32_t vp_formats[] = {
 	DRM_FORMAT_NV12,
 };
 
+static inline bool is_vp_format(const struct mixer_context *ctx, unsigned int win)
+{
+	switch (ctx->planes[win].pixel_format) {
+	case DRM_FORMAT_NV12:
+		return true;
+	default:
+		return false;
+	}
+}
+
 static inline u32 vp_reg_read(struct mixer_resources *res, u32 reg_id)
 {
 	return readl(res->vp_regs + reg_id);
@@ -965,7 +975,7 @@ static void mixer_win_commit(struct exynos_drm_crtc *crtc, unsigned int win)
 	}
 	mutex_unlock(&mixer_ctx->mixer_mutex);
 
-	if (win > 1 && mixer_ctx->vp_enabled)
+	if (is_vp_format(mixer_ctx, win))
 		vp_video_buffer(mixer_ctx, win);
 	else
 		mixer_graph_buffer(mixer_ctx, win);
