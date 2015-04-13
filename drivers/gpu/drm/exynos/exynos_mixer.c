@@ -127,6 +127,11 @@ static const u8 filter_cr_horiz_tap4[] = {
 static const uint32_t mixer_formats[] = {
 	DRM_FORMAT_XRGB8888,
 	DRM_FORMAT_ARGB8888,
+	DRM_FORMAT_RGB565,
+	DRM_FORMAT_XRGB1555,
+	DRM_FORMAT_ARGB1555,
+	DRM_FORMAT_XRGB4444,
+	DRM_FORMAT_ARGB4444,
 };
 
 static const uint32_t vp_formats[] = {
@@ -551,30 +556,32 @@ static void mixer_graph_buffer(struct mixer_context *ctx, int win)
 	unsigned int x_ratio = 0, y_ratio = 0;
 	unsigned int src_x_offset, src_y_offset, dst_x_offset, dst_y_offset;
 	dma_addr_t dma_addr;
-	unsigned int fmt, blend;
+	unsigned int fmt, blend = 0;
 	u32 val;
 
 	plane = &ctx->planes[win];
 
 	switch (plane->pixel_format) {
 	case DRM_FORMAT_ARGB4444:
-		fmt = MIXER_PIXELFORMAT_ARGB4444;
 		blend = 1;
+	case DRM_FORMAT_XRGB4444:
+		fmt = MIXER_PIXELFORMAT_ARGB4444;
 		break;
 
 	case DRM_FORMAT_ARGB8888:
-		fmt = MIXER_PIXELFORMAT_ARGB8888;
 		blend = 1;
-		break;
-
 	case DRM_FORMAT_XRGB8888:
 		fmt = MIXER_PIXELFORMAT_ARGB8888;
-		blend = 0;
+		break;
+
+	case DRM_FORMAT_ARGB1555:
+		blend = 1;
+	case DRM_FORMAT_XRGB1555:
+		fmt = MIXER_PIXELFORMAT_ARGB1555;
 		break;
 
 	case DRM_FORMAT_RGB565:
 		fmt = MIXER_PIXELFORMAT_RGB565;
-		blend = 0;
 		break;
 
 	default:
