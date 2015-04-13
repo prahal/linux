@@ -22,5 +22,4 @@ int exynos_update_plane(struct drm_plane *plane, struct drm_crtc *crtc,
 			uint32_t src_w, uint32_t src_h);
 int exynos_plane_init(struct drm_device *dev,
 		      struct exynos_drm_plane *exynos_plane,
-		      unsigned long possible_crtcs, enum drm_plane_type type,
-		      unsigned int zpos);
+		      const struct exynos_drm_plane_config *config);
