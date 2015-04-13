@@ -144,6 +144,11 @@ static struct fimd_driver_data exynos5_fimd_driver_data = {
 	.has_vtsel = 1,
 };
 
+static const uint32_t fimd_formats[] = {
+	DRM_FORMAT_XRGB8888,
+	DRM_FORMAT_ARGB8888,
+};
+
 struct fimd_context {
 	struct device			*dev;
 	struct drm_device		*drm_dev;
@@ -930,6 +935,8 @@ static int fimd_bind(struct device *dev, struct device *master, void *data)
 	ctx->pipe = priv->pipe++;
 
 	plane_config.possible_crtcs = 1 << ctx->pipe;
+	plane_config.pixel_formats = fimd_formats;
+	plane_config.num_pixel_formats = ARRAY_SIZE(fimd_formats);
 
 	for (i = 0; i < WINDOWS_NR; i++) {
 		plane_config.type = (i == ctx->default_win) ?

@@ -34,6 +34,11 @@
 #define ctx_from_connector(c)	container_of(c, struct vidi_context, \
 					connector)
 
+static const uint32_t vidi_formats[] = {
+	DRM_FORMAT_XRGB8888,
+	DRM_FORMAT_ARGB8888,
+};
+
 struct vidi_context {
 	struct exynos_drm_display	display;
 	struct platform_device		*pdev;
@@ -425,6 +430,8 @@ static int vidi_bind(struct device *dev, struct device *master, void *data)
 	vidi_ctx_initialize(ctx, drm_dev);
 
 	plane_config.possible_crtcs = 1 << ctx->pipe;
+	plane_config.pixel_formats = vidi_formats;
+	plane_config.num_pixel_formats = ARRAY_SIZE(vidi_formats);
 
 	for (i = 0; i < WINDOWS_NR; i++) {
 		plane_config.type = (i == ctx->default_win) ?
