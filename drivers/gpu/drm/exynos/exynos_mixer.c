@@ -136,12 +136,14 @@ static const uint32_t mixer_formats[] = {
 
 static const uint32_t vp_formats[] = {
 	DRM_FORMAT_NV12,
+	DRM_FORMAT_NV21,
 };
 
 static inline bool is_vp_format(const struct mixer_context *ctx, unsigned int win)
 {
 	switch (ctx->planes[win].pixel_format) {
 	case DRM_FORMAT_NV12:
+	case DRM_FORMAT_NV21:
 		return true;
 	default:
 		return false;
@@ -423,6 +425,10 @@ static void vp_video_buffer(struct mixer_context *ctx, int win)
 	switch (plane->pixel_format) {
 	case DRM_FORMAT_NV12:
 		crcb_mode = false;
+		buf_num = 2;
+		break;
+	case DRM_FORMAT_NV21:
+		crcb_mode = true;
 		buf_num = 2;
 		break;
 	/* TODO: single buffer format NV12, NV21 */
