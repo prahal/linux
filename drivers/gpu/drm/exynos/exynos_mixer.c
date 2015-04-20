@@ -442,6 +442,8 @@ static void vp_video_buffer(struct mixer_context *ctx, int win)
 		return;
 	}
 
+	buf_num = 1; /* HACK */
+
 	if (buf_num == 2) {
 		luma_addr[0] = plane->dma_addr[0];
 		chroma_addr[0] = plane->dma_addr[1];
