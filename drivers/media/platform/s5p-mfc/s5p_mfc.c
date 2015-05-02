@@ -851,7 +851,7 @@ static int s5p_mfc_open(struct file *file)
 	 * of the buffer. Set the allow_zero_bytesused flag so that videobuf2
 	 * will keep the value of bytesused intact.
 	 */
-	q->allow_zero_bytesused = 1;
+	//q->allow_zero_bytesused = 1;
 	q->mem_ops = &vb2_dma_contig_memops;
 	q->timestamp_flags = V4L2_BUF_FLAG_TIMESTAMP_COPY;
 	ret = vb2_queue_init(q);
