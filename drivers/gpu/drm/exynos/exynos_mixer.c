@@ -923,6 +923,15 @@ static int mixer_initialize(struct mixer_context *mixer_ctx,
 	mixer_ctx->drm_dev = drm_dev;
 	mixer_ctx->pipe = priv->pipe++;
 
+	if (is_drm_iommu_supported(mixer_ctx->drm_dev)) {
+		ret = drm_iommu_attach_device(mixer_ctx->drm_dev, mixer_ctx->dev);
+		if (ret) {
+			DRM_ERROR("drm_iommu_attach_device failed ret=%d\n", ret);
+			return ret;
+		}
+	}
+
+
 	/* acquire resources: regs, irqs, clocks */
 	ret = mixer_resources_init(mixer_ctx);
 	if (ret) {
@@ -939,10 +948,8 @@ static int mixer_initialize(struct mixer_context *mixer_ctx,
 		}
 	}
 
-	if (!is_drm_iommu_supported(mixer_ctx->drm_dev))
-		return 0;
 
-	return drm_iommu_attach_device(mixer_ctx->drm_dev, mixer_ctx->dev);
+	return ret;
 }
 
 static void mixer_ctx_remove(struct mixer_context *mixer_ctx)

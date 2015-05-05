@@ -1322,20 +1322,19 @@ static int g2d_subdrv_probe(struct drm_device *drm_dev, struct device *dev)
 	if (unlikely(!g2d))
 		return -EFAULT;
 
+	if (is_drm_iommu_supported(drm_dev)) {
+		ret = drm_iommu_attach_device(drm_dev, dev);
+		if (unlikely(ret < 0)) {
+			dev_err(dev, "failed to enable iommu.\n");
+			return ret;
+		}
+	}
+
 	/* allocate dma-aware cmdlist buffer. */
 	ret = g2d_init_cmdlist(g2d);
 	if (unlikely(ret < 0)) {
 		dev_err(dev, "cmdlist init failed\n");
 		return ret;
-	}
-
-	if (!is_drm_iommu_supported(drm_dev))
-		return 0;
-
-	ret = drm_iommu_attach_device(drm_dev, dev);
-	if (unlikely(ret < 0)) {
-		dev_err(dev, "failed to enable iommu.\n");
-		g2d_fini_cmdlist(g2d);
 	}
 
 	return ret;
