@@ -956,6 +956,8 @@ static int fimc_probe(struct platform_device *pdev)
 
 	fimc->pdev = pdev;
 
+	pdev->dev.coherent_dma_mask = DMA_BIT_MASK(32);
+	pdev->dev.dma_mask = &pdev->dev.coherent_dma_mask;
 	if (dev->of_node) {
 		ret = fimc_parse_dt(fimc, &lclk_freq);
 		if (ret < 0)

@@ -611,6 +611,7 @@ static int sdhci_s3c_probe(struct platform_device *pdev)
 	if (ret)
 		goto err_req_regs;
 
+	host->dma_mask = DMA_BIT_MASK(32);
 	ret = sdhci_add_host(host);
 	if (ret) {
 		dev_err(dev, "sdhci_add_host() failed\n");

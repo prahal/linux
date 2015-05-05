@@ -1103,6 +1103,9 @@ static int s5p_mfc_probe(struct platform_device *pdev)
 		goto err_res;
 	}
 
+	dev->plat_dev->dev.coherent_dma_mask = DMA_BIT_MASK(32);
+	dev->plat_dev->dev.dma_mask =  &dev->plat_dev->dev.coherent_dma_mask;
+
 	dev->mem_dev_l = s5p_mfc_alloc_memdev(&dev->plat_dev->dev, "left");
 	dev->mem_dev_r = s5p_mfc_alloc_memdev(&dev->plat_dev->dev, "right");
 

@@ -19,6 +19,7 @@
 
 #include <linux/clk.h>
 #include <linux/err.h>
+#include <linux/dma-mapping.h>
 #include <linux/platform_device.h>
 #include <linux/regulator/consumer.h>
 #include <linux/regulator/driver.h>
@@ -149,6 +150,10 @@ err_regulator:
 int mali_platform_device_init(struct platform_device *device)
 {
 	MALI_CHECK(mali_platform_init_clk(device) == 0, _MALI_OSK_ERR_FAULT);
+
+	device->dev.coherent_dma_mask = DMA_BIT_MASK(32);
+	device->dev.dma_mask = &device->dev.coherent_dma_mask;
+
 	MALI_SUCCESS;
 }
 
