@@ -1105,7 +1105,15 @@ static int s5p_mfc_probe(struct platform_device *pdev)
 	}
 
 	dev->mem_dev_l = s5p_mfc_alloc_memdev(&dev->plat_dev->dev, "left");
+	if (!dev->mem_dev_l) {
+		dev_err(&pdev->dev, "Failed to allocate left subdevice memory (%d)\n", ret);
+		goto err_res;
+	}
 	dev->mem_dev_r = s5p_mfc_alloc_memdev(&dev->plat_dev->dev, "right");
+	if (!dev->mem_dev_r) {
+		dev_err(&pdev->dev, "Failed to allocate right subdevice memory (%d)\n", ret);
+		goto err_res;
+	}
 
 	dev->alloc_ctx[0] = vb2_dma_contig_init_ctx(dev->mem_dev_l);
 	if (IS_ERR(dev->alloc_ctx[0])) {
