@@ -1033,6 +1033,8 @@ static struct device *s5p_mfc_alloc_memdev(struct device *dev, const char *name)
 	child->coherent_dma_mask = dev->coherent_dma_mask;
 	child->dma_mask = dev->dma_mask;
 	child->release = of_reserved_mem_device_release;
+	child->archdata.dma_ops = dev->archdata.dma_ops;
+	child->archdata.mapping = dev->archdata.mapping;
 
 	if (device_add(child) == 0) {
 		ret = of_reserved_mem_device_init(child);
