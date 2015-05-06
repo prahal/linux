@@ -141,7 +141,7 @@ static inline bool tx_active(struct i2s_dai *i2s)
 /* Return pointer to the other DAI */
 static inline struct i2s_dai *get_other_dai(struct i2s_dai *i2s)
 {
-	return i2s->pri_dai ? : i2s->sec_dai;
+	return i2s->pri_dai ? NULL: i2s->sec_dai;
 }
 
 /* If the other interface of the controller is transmitting data */
