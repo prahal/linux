@@ -1119,8 +1119,9 @@ static int exynos_iommu_add_device(struct device *dev)
 	struct iommu_group *group;
 	int ret;
 
+	/* skip devices which doesn't have sysmmu controller */
 	if (!has_sysmmu(dev))
-		return -ENODEV;
+		return 0;
 
 	group = iommu_group_get(dev);
 
