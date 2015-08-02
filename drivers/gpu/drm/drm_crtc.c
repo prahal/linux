@@ -5191,6 +5191,13 @@ int drm_mode_page_flip_ioctl(struct drm_device *dev,
 		goto out;
 	}
 
+	ret = drm_vblank_get(dev, drm_crtc_index(crtc));
+	if (ret) {
+		DRM_DEBUG("Page flip aborted : vblank events are not ready\n");
+		goto out;
+	}
+	drm_vblank_put(dev, drm_crtc_index(crtc));
+
 	if (page_flip->flags & DRM_MODE_PAGE_FLIP_EVENT) {
 		ret = -ENOMEM;
 		spin_lock_irqsave(&dev->event_lock, flags);
