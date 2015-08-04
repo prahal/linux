@@ -1080,12 +1080,6 @@ static int s5p_mfc_probe(struct platform_device *pdev)
 
 	dev->variant = mfc_get_drv_data(pdev);
 
-	ret = s5p_mfc_init_pm(dev);
-	if (ret < 0) {
-		dev_err(&pdev->dev, "failed to get mfc clock source\n");
-		return ret;
-	}
-
 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
 
 	dev->regs_base = devm_ioremap_resource(&pdev->dev, res);
@@ -1183,6 +1177,12 @@ static int s5p_mfc_probe(struct platform_device *pdev)
 	dev->watchdog_timer.data = (unsigned long)dev;
 	dev->watchdog_timer.function = s5p_mfc_watchdog;
 
+	ret = s5p_mfc_init_pm(dev);
+	if (ret < 0) {
+		dev_err(&pdev->dev, "failed to get mfc clock source\n");
+		goto err_pm;
+	}
+
 	/* Initialize HW ops and commands based on MFC version */
 	s5p_mfc_init_hw_ops(dev);
 	s5p_mfc_init_hw_cmds(dev);
@@ -1210,6 +1210,8 @@ err_enc_reg:
 	video_unregister_device(dev->vfd_dec);
 err_dec_reg:
 	video_device_release(dev->vfd_enc);
+err_pm:
+	s5p_mfc_final_pm(dev);
 err_enc_alloc:
 	video_device_release(dev->vfd_dec);
 err_dec_alloc:
@@ -1221,7 +1223,6 @@ err_alloc_fw:
 err_mem_init_ctx_1:
 	vb2_dma_contig_cleanup_ctx(dev->alloc_ctx[0]);
 err_res:
-	s5p_mfc_final_pm(dev);
 
 	pr_debug("%s-- with error\n", __func__);
 	return ret;
