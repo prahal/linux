@@ -1424,6 +1424,9 @@ static const struct exynos_cpuclk_cfg_data e4212_armclk_d[] __initconst = {
 		(((cores) << 8) | ((hpm) << 4) | ((copy) << 0))
 
 static const struct exynos_cpuclk_cfg_data e4412_armclk_d[] __initconst = {
+	{ 1800000, E4210_CPU_DIV0(2, 1, 6, 0, 7, 3), E4412_CPU_DIV1(7, 0, 7), },
+	{ 1704000, E4210_CPU_DIV0(2, 1, 6, 0, 7, 3), E4412_CPU_DIV1(7, 0, 7), },
+	{ 1600000, E4210_CPU_DIV0(2, 1, 6, 0, 7, 3), E4412_CPU_DIV1(7, 0, 6), },
 	{ 1500000, E4210_CPU_DIV0(2, 1, 6, 0, 7, 3), E4412_CPU_DIV1(7, 0, 6), },
 	{ 1400000, E4210_CPU_DIV0(2, 1, 6, 0, 7, 3), E4412_CPU_DIV1(6, 0, 6), },
 	{ 1300000, E4210_CPU_DIV0(2, 1, 5, 0, 7, 3), E4412_CPU_DIV1(6, 0, 5), },
