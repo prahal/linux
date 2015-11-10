@@ -190,7 +190,7 @@ struct g2d_buf_desc {
 struct g2d_buf_info {
 	unsigned int		map_nr;
 	enum g2d_reg_type	reg_types[MAX_REG_TYPE_NR];
-	unsigned long		handles[MAX_REG_TYPE_NR];
+	void			*obj[MAX_REG_TYPE_NR];
 	unsigned int		types[MAX_REG_TYPE_NR];
 	struct g2d_buf_desc	descs[MAX_REG_TYPE_NR];
 };
@@ -376,11 +376,10 @@ add_to_list:
 }
 
 static void g2d_userptr_put_dma_addr(struct drm_device *drm_dev,
-					unsigned long obj,
+					void *obj,
 					bool force)
 {
-	struct g2d_cmdlist_userptr *g2d_userptr =
-					(struct g2d_cmdlist_userptr *)obj;
+	struct g2d_cmdlist_userptr *g2d_userptr = obj;
 	struct page **pages;
 
 	if (!obj)
@@ -423,7 +422,7 @@ static dma_addr_t *g2d_userptr_get_dma_addr(struct drm_device *drm_dev,
 					unsigned long userptr,
 					unsigned long size,
 					struct drm_file *filp,
-					unsigned long *obj)
+					void **obj)
 {
 	struct drm_exynos_file_private *file_priv = filp->driver_priv;
 	struct exynos_drm_g2d_private *g2d_priv = file_priv->g2d_priv;
@@ -450,7 +449,7 @@ static dma_addr_t *g2d_userptr_get_dma_addr(struct drm_device *drm_dev,
 			 */
 			if (g2d_userptr->size == size) {
 				atomic_inc(&g2d_userptr->refcount);
-				*obj = (unsigned long)g2d_userptr;
+				*obj = g2d_userptr;
 
 				return &g2d_userptr->dma_addr;
 			}
@@ -534,7 +533,7 @@ static dma_addr_t *g2d_userptr_get_dma_addr(struct drm_device *drm_dev,
 		g2d_userptr->in_pool = true;
 	}
 
-	*obj = (unsigned long)g2d_userptr;
+	*obj = g2d_userptr;
 
 	return &g2d_userptr->dma_addr;
 
@@ -566,9 +565,7 @@ static void g2d_userptr_free_all(struct drm_device *drm_dev,
 
 	list_for_each_entry_safe(g2d_userptr, n, &g2d_priv->userptr_list, list)
 		if (g2d_userptr->in_pool)
-			g2d_userptr_put_dma_addr(drm_dev,
-						(unsigned long)g2d_userptr,
-						true);
+			g2d_userptr_put_dma_addr(drm_dev, g2d_userptr, true);
 
 	g2d->current_pool = 0;
 }
@@ -723,26 +720,23 @@ static int g2d_map_cmdlist_gem(struct g2d_data *g2d,
 		buf_desc = &buf_info->descs[reg_type];
 
 		if (buf_info->types[reg_type] == BUF_TYPE_GEM) {
-			unsigned long size;
+			struct exynos_drm_gem *exynos_gem;
 
-			size = exynos_drm_gem_get_size(drm_dev, handle, file);
-			if (!size) {
+			exynos_gem = exynos_drm_gem_get(drm_dev, handle, file);
+			if (IS_ERR(exynos_gem)) {
 				ret = -EFAULT;
 				goto err;
 			}
 
-			if (!g2d_check_buf_desc_is_valid(buf_desc, reg_type,
-									size)) {
+			if (!g2d_check_buf_desc_is_valid(buf_desc,
+							 reg_type, exynos_gem->size)) {
+				exynos_drm_gem_put(drm_dev, exynos_gem);
 				ret = -EFAULT;
 				goto err;
 			}
 
-			addr = exynos_drm_gem_get_dma_addr(drm_dev, handle,
-								file);
-			if (IS_ERR(addr)) {
-				ret = -EFAULT;
-				goto err;
-			}
+			addr = &exynos_gem->dma_addr;
+			buf_info->obj[reg_type] = exynos_gem;
 		} else {
 			struct drm_exynos_g2d_userptr g2d_userptr;
 
@@ -762,7 +756,7 @@ static int g2d_map_cmdlist_gem(struct g2d_data *g2d,
 							g2d_userptr.userptr,
 							g2d_userptr.size,
 							file,
-							&handle);
+							&buf_info->obj[reg_type]);
 			if (IS_ERR(addr)) {
 				ret = -EFAULT;
 				goto err;
@@ -771,7 +765,6 @@ static int g2d_map_cmdlist_gem(struct g2d_data *g2d,
 
 		cmdlist->data[reg_pos + 1] = *addr;
 		buf_info->reg_types[i] = reg_type;
-		buf_info->handles[reg_type] = handle;
 	}
 
 	return 0;
@@ -792,22 +785,21 @@ static void g2d_unmap_cmdlist_gem(struct g2d_data *g2d,
 	for (i = 0; i < buf_info->map_nr; i++) {
 		struct g2d_buf_desc *buf_desc;
 		enum g2d_reg_type reg_type;
-		unsigned long handle;
+		void *obj;
 
 		reg_type = buf_info->reg_types[i];
 
 		buf_desc = &buf_info->descs[reg_type];
-		handle = buf_info->handles[reg_type];
+		obj = buf_info->obj[reg_type];
 
 		if (buf_info->types[reg_type] == BUF_TYPE_GEM)
-			exynos_drm_gem_put_dma_addr(subdrv->drm_dev, handle,
-							filp);
+			exynos_drm_gem_put(subdrv->drm_dev, obj);
 		else
-			g2d_userptr_put_dma_addr(subdrv->drm_dev, handle,
+			g2d_userptr_put_dma_addr(subdrv->drm_dev, obj,
 							false);
 
 		buf_info->reg_types[i] = REG_TYPE_NONE;
-		buf_info->handles[reg_type] = 0;
+		buf_info->obj[reg_type] = NULL;
 		buf_info->types[reg_type] = 0;
 		memset(buf_desc, 0x00, sizeof(*buf_desc));
 	}
