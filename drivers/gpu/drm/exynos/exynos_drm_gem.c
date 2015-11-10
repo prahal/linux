@@ -407,7 +407,7 @@ int exynos_drm_gem_dumb_create(struct drm_file *file_priv,
 	 *	with DRM_IOCTL_MODE_CREATE_DUMB command.
 	 */
 
-	args->pitch = args->width * ((args->bpp + 7) / 8);
+	args->pitch = roundup(args->width, EXYNOS_DRM_PITCH_ALIGN) * ((args->bpp + 7) / 8);
 	args->size = args->pitch * args->height;
 
 	if (is_drm_iommu_supported(dev))
