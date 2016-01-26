@@ -397,6 +397,7 @@ static void mixer_cfg_rgb_fmt(struct mixer_context *ctx, unsigned int height)
 	switch (height) {
 	case 480:
 	case 576:
+	case 600:
 		val = MXR_CFG_RGB601_0_255;
 		break;
 	case 720:
@@ -1057,7 +1058,7 @@ static int mixer_mode_valid(struct exynos_drm_crtc *crtc,
 	    (w >= 1664 && w <= 1920 && h >= 936 && h <= 1080))
 		return MODE_OK;
 
-	if ((w == 1024 && h == 768) ||
+	if ((w == 1024 && (h == 768 || h == 600)) ||
 	    (w == 1366 && h == 768) ||
 	    (w == 1280 && h == 1024))
 		return MODE_OK;
