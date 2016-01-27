@@ -49,4 +49,11 @@ int drm_plane_create_zpos_immutable_property(struct drm_plane *plane,
 					     unsigned int zpos);
 int drm_atomic_normalize_zpos(struct drm_device *dev,
 			      struct drm_atomic_state *state);
+
+int drm_mode_create_blending_property(struct drm_device *dev,
+				      unsigned int *supported_blendings,
+				      unsigned int supported_blendings_count);
+int drm_mode_create_alpha_property(struct drm_device *dev,
+				   unsigned int max);
+int drm_mode_create_alpha_premult_property(struct drm_device *dev);
 #endif

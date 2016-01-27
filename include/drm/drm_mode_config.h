@@ -555,6 +555,21 @@ struct drm_mode_config {
 	 */
 	struct drm_property *plane_type_property;
 	/**
+	 * @blending_property: Optional property for planes or CRTCs to specify
+	 * blending.
+	 */
+	struct drm_property *blending_property;
+	/**
+	 * @alpha_property: Optional property for planes or CRTCs to specify
+	 * the alpha value (transparency) for blending.
+	 */
+	struct drm_property *alpha_property;
+	/**
+	 * @alpha_premult_property: Optional property for planes or CRTCs to specify
+	 * premultiplication mode for blending.
+	 */
+	struct drm_property *alpha_premult_property;
+	/**
 	 * @prop_src_x: Default atomic plane property for the plane source
 	 * position in the connected &drm_framebuffer.
 	 */

@@ -848,6 +848,107 @@ struct drm_mode_revoke_lease {
 	__u32 lessee_id;
 };
 
+/**
+ * DOC: Generic plane blending operation
+ *
+ * Planes attached to one CRTC are blended by the hardware to produce the final
+ * result on the display. The order of planes during blending operation is
+ * determined by 'zpos' property. When order of plane for blending operation is
+ * determined, then framebuffers of all planes are placed on the display area
+ * according to the configured position and target size.
+ *
+ * Then one of the selected blending procedure is applied to each pixel on the
+ * display area to compute the final result of the blending. The blending
+ * procedure is similar to the well known glBlendFunc() API.
+ *
+ * The generic equation for blending is:
+ * outputRGB = sF * sRGB + dF * dRGB
+ *
+ * @sRGB: are RGB values of blended plane
+ *
+ * @dRGB: are RGB values of plane's background (result of previous blending or
+ * 	RGB pixel values of deeper planes).
+ *
+ * @sF and @dF: are one of DRM_FACTOR_* symbolic constants.
+ *
+ * Blending mode then defined as DRM_BLEND(sF, dF), which selects respective
+ * factors for the above equation. For more information, see drm_blend_mode
+ * enum.
+ */
+
+/**
+ * enum drm_blend_factor - factors for defining plane blending formula
+ * @DRM_FACTOR_ZERO: constant zero
+ * @DRM_FACTOR_ONE: constant one
+ * @DRM_FACTOR_SRC_ALPHA: pixel alpha value
+ * @DRM_FACTOR_ONE_MINUS_SRC_ALPHA: 1 - DRM_FACTOR_SRC_ALPHA
+ * @DRM_FACTOR_CONST_ALPHA: constant alpha (plane's property)
+ * @DRM_FACTOR_ONE_MINUS_CONST_ALPHA: 1 - DRM_FACTOR_CONST_ALPHA
+ * @DRM_FACTOR_SRC_CONST_ALPHA: pixel alpha value multiplied by plane's
+ *				constant alpha
+ * @DRM_FACTOR_ONE_MINUS_SRC_CONST_ALPHA: 1 - DRM_FACTOR_SRC_CONST_ALPHA
+ *
+ * Values of this enum are used to define plane blending formula. Two factors
+ * have to be selected - one for source plane and one for destination
+ * (background).
+ */
+enum drm_blend_factor {
+	DRM_FACTOR_ZERO,
+	DRM_FACTOR_ONE,
+	DRM_FACTOR_SRC_ALPHA,
+	DRM_FACTOR_ONE_MINUS_SRC_ALPHA,
+	DRM_FACTOR_CONST_ALPHA,
+	DRM_FACTOR_ONE_MINUS_CONST_ALPHA,
+	DRM_FACTOR_SRC_CONST_ALPHA,
+	DRM_FACTOR_ONE_MINUS_SRC_CONST_ALPHA,
+};
+
+#define DRM_BLEND(s, d) ((d << 16) | (s))
+
+/**
+ * enum drm_blend_mode - predefined blending modes
+ * @DRM_BLEND_S_ONE_D_ZERO: no transparency; per-pixel and plane's alpha is
+ *	ignored regardless of the selected pixel format.
+ * @DRM_BLEND_S_SRC_ALPHA_D_ONE_MINUS_SRC_ALPHA: blending with per-pixel alpha;
+ *	plane's alpha is ignored, aplies only when pixel format defines alpha
+ *	channel, otherwise same as @DRM_BLEND_DISABLED and
+ *	@DRM_BLEND_S_ONE_D_ZERO.
+ * @DRM_BLEND_S_CONST_ALPHA_D_ONE_MINUS_CONST_ALPHA: blending with constant
+ *	alpha; per-pixel alpha is ignored regardless of the selected pixel
+ *	format.
+ * @DRM_BLEND_S_SRC_CONST_ALPHA_D_ONE_MINUS_SRC_CONST_ALPHA: blending with both
+ *	per-pixel and plane's alpha; aplies only when pixel format defines alpha
+ *	channel, otherwise same as @DRM_BLEND_CONST_ALPHA and
+ *	@DRM_BLEND_S_CONST_ALPHA_D_ONE_MINUS_CONST_ALPHA
+ * @DRM_BLEND_DISABLED: same as @DRM_BLEND_S_ONE_D_ZERO
+ * @DRM_BLEND_PIXEL_ALPHA: same as @DRM_BLEND_S_SRC_ALPHA_D_ONE_MINUS_SRC_ALPHA,
+ * @DRM_BLEND_CONST_ALPHA: same as
+ *	@DRM_BLEND_S_CONST_ALPHA_D_ONE_MINUS_CONST_ALPHA,
+ * @DRM_BLEND_PIXEL_CONST_ALPHA: same as
+ *	@DRM_BLEND_S_SRC_CONST_ALPHA_D_ONE_MINUS_SRC_CONST_ALPHA,
+ *
+ * Values of this enum can be set to 'blend' plane's property. The actual
+ * value of each blending mode consists of two drm_blend_factor values
+ * encoded on lower 16 bits for source plane and higher 16 bits for destiantion
+ * (background).
+ */
+enum drm_blend_mode {
+	DRM_BLEND_S_ONE_D_ZERO = DRM_BLEND(DRM_FACTOR_ONE, DRM_FACTOR_ZERO),
+	DRM_BLEND_S_SRC_ALPHA_D_ONE_MINUS_SRC_ALPHA =
+		DRM_BLEND(DRM_FACTOR_SRC_ALPHA,
+			  DRM_FACTOR_ONE_MINUS_SRC_ALPHA),
+	DRM_BLEND_S_CONST_ALPHA_D_ONE_MINUS_CONST_ALPHA =
+		DRM_BLEND(DRM_FACTOR_CONST_ALPHA,
+			  DRM_FACTOR_ONE_MINUS_CONST_ALPHA),
+	DRM_BLEND_S_SRC_CONST_ALPHA_D_ONE_MINUS_SRC_CONST_ALPHA =
+		DRM_BLEND(DRM_FACTOR_SRC_CONST_ALPHA,
+			  DRM_FACTOR_ONE_MINUS_SRC_CONST_ALPHA),
+	DRM_BLEND_DISABLED = DRM_BLEND_S_ONE_D_ZERO,
+	DRM_BLEND_PIXEL_ALPHA = DRM_BLEND_S_SRC_ALPHA_D_ONE_MINUS_SRC_ALPHA,
+	DRM_BLEND_CONST_ALPHA = DRM_BLEND_S_CONST_ALPHA_D_ONE_MINUS_CONST_ALPHA,
+	DRM_BLEND_PIXEL_CONST_ALPHA = DRM_BLEND_S_SRC_CONST_ALPHA_D_ONE_MINUS_SRC_CONST_ALPHA,
+};
+
 #if defined(__cplusplus)
 }
 #endif

@@ -296,6 +296,116 @@ int drm_plane_create_zpos_immutable_property(struct drm_plane *plane,
 }
 EXPORT_SYMBOL(drm_plane_create_zpos_immutable_property);
 
+/**
+ * drm_mode_create_blending_property - create generic blending property
+ * @dev: DRM device
+ * @supported_blendings: array of supported blending modes
+ * @supported_blendings_count: size of @supported_blendings array
+ *
+ * This function initializes generic blending property to selected subset
+ * of supported blending modes. Drivers can then attach this property to
+ * planes to let userspace to configure different blending modes. For more
+ * information on blending modes, see DRM_BLEND_* defines.
+ *
+ * Returns:
+ * Zero on success, negative errno on failure.
+ */
+int drm_mode_create_blending_property(struct drm_device *dev,
+				      unsigned int *supported_blendings,
+				      unsigned int supported_blendings_count)
+{
+	struct drm_property *prop;
+	static const struct drm_prop_enum_list all_values[] = {
+		{ DRM_BLEND_DISABLED,		"disabled" },
+		{ DRM_BLEND_PIXEL_ALPHA,	"pixel-alpha" },
+		{ DRM_BLEND_CONST_ALPHA,	"const-alpha" },
+		{ DRM_BLEND_PIXEL_CONST_ALPHA,	"pixel-const-alpha" },
+	};
+	struct drm_prop_enum_list *values;
+	int i, j;
+
+	values = kmalloc(supported_blendings_count * sizeof(*values),
+			 GFP_KERNEL);
+	if (!values)
+		return -ENOMEM;
+
+	for (i = 0; i < supported_blendings_count; i++) {
+		for (j = 0; j < ARRAY_SIZE(all_values); j++) {
+			if (all_values[j].type == supported_blendings[i]) {
+				values[i].type = supported_blendings[i];
+				values[i].name = all_values[j].name;
+				break;
+			}
+		}
+	}
+
+	prop = drm_property_create_enum(dev, 0, "blending", values,
+					supported_blendings_count);
+	kfree(values);
+
+	if (!prop)
+		return -ENOMEM;
+
+	dev->mode_config.blending_property = prop;
+	return 0;
+}
+EXPORT_SYMBOL(drm_mode_create_blending_property);
+
+/**
+ * drm_mode_create_alpha_property - create plane alpha property
+ * @dev: DRM device
+ * @max: maximal possible value of alpha property
+ *
+ * This function initializes generic plane's alpha property. It's value is used
+ * for blending operations, depending on selected blending mode. For more
+ * information, see DRM_BLEND_* modes and its documentation. Maximum alpha value
+ * is determined by the driver.
+ *
+ * Returns:
+ * Zero on success, negative errno on failure.
+ */
+int drm_mode_create_alpha_property(struct drm_device *dev, unsigned int max)
+{
+	struct drm_property *prop;
+
+	prop = drm_property_create_range(dev, 0, "alpha", 0, max);
+	if (!prop)
+		return -ENOMEM;
+
+	dev->mode_config.alpha_property = prop;
+	return 0;
+}
+EXPORT_SYMBOL(drm_mode_create_alpha_property);
+
+/**
+ * drm_mode_create_alpha_premult_property - create muttable zpos property
+ * @dev: DRM device
+ *
+ * This function initializes generic plane's alpha pre-multiplication property.
+ * This property indicates the range of the RGB data of the framebuffer attached
+ * to the given plane. When enabled, RGB values fits the range from 0 to pixel's
+ * alpha value. When disabled, RGB values are from 0 to 255 range and during
+ * blending operations they will be multiplied by the pixel's alpha value first
+ * before computing result of blending equations. Value of this property is used
+ * only when user attaches framebuffer with pixel format, which contains
+ * non-binary alpha channel (for example: DRM_FORMAT_ARGB8888).
+ *
+ * Returns:
+ * Zero on success, negative errno on failure.
+ */
+int drm_mode_create_alpha_premult_property(struct drm_device *dev)
+{
+	struct drm_property *prop;
+
+	prop = drm_property_create_bool(dev, 0, "alpha_premult");
+	if (!prop)
+		return -ENOMEM;
+
+	dev->mode_config.alpha_premult_property = prop;
+	return 0;
+}
+EXPORT_SYMBOL(drm_mode_create_alpha_premult_property);
+
 static int drm_atomic_state_zpos_cmp(const void *a, const void *b)
 {
 	const struct drm_plane_state *sa = *(struct drm_plane_state **)a;
