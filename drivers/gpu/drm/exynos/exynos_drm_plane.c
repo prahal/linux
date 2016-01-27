@@ -142,6 +142,9 @@ static void exynos_drm_plane_reset(struct drm_plane *plane)
 		plane->state = &exynos_state->base;
 		plane->state->plane = plane;
 		plane->state->zpos = exynos_plane->config->zpos;
+		plane->state->alpha = 255;
+		plane->state->alpha_premult = 1;
+		plane->state->blending = exynos_plane->config->blending_mode;
 	}
 }
 
@@ -298,6 +301,53 @@ static void exynos_plane_attach_zpos_property(struct drm_plane *plane,
 		drm_plane_create_zpos_property(plane, 0, 0, MAX_PLANE - 1);
 }
 
+static void exynos_plane_attach_alpha_property(struct drm_plane *plane)
+{
+	struct drm_device *dev = plane->dev;
+
+	if (!dev->mode_config.alpha_property)
+		if (drm_mode_create_alpha_property(dev, 255))
+			return;
+
+	drm_object_attach_property(&plane->base,
+				   dev->mode_config.alpha_property, 255);
+}
+
+static void exynos_plane_attach_alpha_premult_property(struct drm_plane *plane)
+{
+	struct drm_device *dev = plane->dev;
+
+	if (!dev->mode_config.alpha_premult_property)
+		if (drm_mode_create_alpha_premult_property(dev)) {
+			printk("failed to create alpha premult property\n");
+			return;
+		}
+
+	drm_object_attach_property(&plane->base,
+				   dev->mode_config.alpha_premult_property, 1);
+}
+
+static void exynos_plane_attach_blending_property(struct drm_plane *plane,
+						  unsigned int blending_mode)
+{
+	struct drm_device *dev = plane->dev;
+	static unsigned int blending_modes[] = {
+		DRM_BLEND_DISABLED,
+		DRM_BLEND_PIXEL_ALPHA,
+		DRM_BLEND_CONST_ALPHA,
+		DRM_BLEND_PIXEL_CONST_ALPHA,
+	};
+
+	if (!dev->mode_config.blending_property)
+		if (drm_mode_create_blending_property(dev, blending_modes,
+						ARRAY_SIZE(blending_modes)))
+			return;
+
+	drm_object_attach_property(&plane->base,
+				   dev->mode_config.blending_property,
+				   blending_mode);
+}
+
 int exynos_plane_init(struct drm_device *dev,
 		      struct exynos_drm_plane *exynos_plane, unsigned int index,
 		      const struct exynos_drm_plane_config *config)
@@ -322,6 +372,16 @@ int exynos_plane_init(struct drm_device *dev,
 
 	exynos_plane_attach_zpos_property(&exynos_plane->base,
 			   !(config->capabilities & EXYNOS_DRM_PLANE_CAP_ZPOS));
+
+	if (config->capabilities & EXYNOS_DRM_PLANE_CAP_PLANE_ALPHA)
+		exynos_plane_attach_alpha_property(&exynos_plane->base);
+
+	if (config->capabilities & EXYNOS_DRM_PLANE_CAP_PREMULT_ALPHA)
+		exynos_plane_attach_alpha_premult_property(&exynos_plane->base);
+
+	if (config->capabilities & EXYNOS_DRM_PLANE_CAP_BLENDING)
+		exynos_plane_attach_blending_property(&exynos_plane->base,
+						      config->blending_mode);
 
 	return 0;
 }

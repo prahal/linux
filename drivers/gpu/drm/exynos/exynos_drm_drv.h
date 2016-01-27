@@ -92,6 +92,9 @@ struct exynos_drm_plane {
 #define EXYNOS_DRM_PLANE_CAP_SCALE	(1 << 1)
 #define EXYNOS_DRM_PLANE_CAP_ZPOS	(1 << 2)
 #define EXYNOS_DRM_PLANE_CAP_TILE	(1 << 3)
+#define EXYNOS_DRM_PLANE_CAP_PLANE_ALPHA	(1 << 4)
+#define EXYNOS_DRM_PLANE_CAP_PREMULT_ALPHA	(1 << 5)
+#define EXYNOS_DRM_PLANE_CAP_BLENDING	(1 << 6)
 
 /*
  * Exynos DRM plane configuration structure.
@@ -100,6 +103,7 @@ struct exynos_drm_plane {
  * @type: type of the plane (primary, cursor or overlay).
  * @pixel_formats: supported pixel formats.
  * @num_pixel_formats: number of elements in 'pixel_formats'.
+ * @blending_mode: default blending mode.
  * @capabilities: supported features (see EXYNOS_DRM_PLANE_CAP_*)
  */
 
@@ -108,6 +112,7 @@ struct exynos_drm_plane_config {
 	enum drm_plane_type type;
 	const uint32_t *pixel_formats;
 	unsigned int num_pixel_formats;
+	unsigned int blending_mode;
 	unsigned int capabilities;
 };
 
