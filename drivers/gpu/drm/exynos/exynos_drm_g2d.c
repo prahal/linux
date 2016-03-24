@@ -1370,6 +1370,31 @@ err:
 	return ret;
 }
 
+static void g2d_unmap_cmdlist_buffers(struct g2d_data *g2d,
+				  struct g2d_cmdlist_node *node,
+				  struct drm_file *filp)
+{
+	struct exynos_drm_subdrv *subdrv = &g2d->subdrv;
+
+	unsigned int i;
+
+	for (i = 0; i < MAX_BUF_TYPE_NR; ++i) {
+		struct g2d_buf_info *buf_info;
+
+		buf_info = &node->buf_info[i];
+
+		if (!buf_info->obj)
+			continue;
+
+		if (buf_info->is_userptr)
+			g2d_userptr_put_dma_addr(subdrv->drm_dev, buf_info->obj);
+		else
+			exynos_drm_gem_put(subdrv->drm_dev, buf_info->obj);
+
+		buf_info->obj = NULL;
+	}
+}
+
 static void g2d_dma_start(struct g2d_data *g2d,
 			  struct g2d_runqueue_node *runqueue_node)
 {
