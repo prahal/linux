@@ -1288,6 +1288,88 @@ err:
 	return false;
 }
 
+static int g2d_map_cmdlist_buffers(struct g2d_data *g2d,
+				struct g2d_cmdlist_node *node,
+				struct drm_device *drm_dev,
+				struct drm_file *file)
+{
+	struct drm_exynos_file_private *file_priv = file->driver_priv;
+	struct exynos_drm_g2d_private *g2d_priv = file_priv->g2d_priv;
+
+	int ret;
+	unsigned int i;
+
+	for (i = 0; i < MAX_BUF_TYPE_NR; ++i) {
+		struct g2d_buf_info *buf_info;
+		unsigned long *data;
+		unsigned long handle;
+		dma_addr_t *addr;
+
+		buf_info = &node->buf_info[i];
+
+		if (!buf_info->data)
+			continue;
+
+		/* Consider a buffer with unset stride to be invalid. */
+		if (!buf_info->stride) {
+			ret = -EFAULT;
+			goto err;
+		}
+
+		data = buf_info->data;
+		handle = data[1];
+
+		if (buf_info->is_userptr) {
+			uint64_t user_addr;
+			struct g2d_cmdlist_userptr *userptr;
+
+			if (unlikely(copy_from_user(&user_addr, (void __user *)handle,
+							sizeof(uint64_t)))) {
+				ret = -EFAULT;
+				goto err;
+			}
+
+			userptr = g2d_userptr_lookup(g2d_priv, user_addr);
+			if (unlikely(!userptr)) {
+				ret = -EFAULT;
+				goto err;
+			}
+
+			addr = g2d_userptr_get_dma_addr(drm_dev,
+							userptr,
+							g2d_get_dma_direction(i));
+			if (IS_ERR(addr)) {
+				ret = -EFAULT;
+				goto err;
+			}
+
+			buf_info->size = userptr->size;
+			buf_info->obj = userptr;
+		} else {
+			struct exynos_drm_gem *exynos_gem;
+
+			exynos_gem = exynos_drm_gem_get(drm_dev, handle, file);
+			if (IS_ERR(exynos_gem)) {
+				ret = -EFAULT;
+				goto err;
+			}
+
+			addr = &exynos_gem->dma_addr;
+			buf_info->size = exynos_gem->size;
+			buf_info->obj = exynos_gem;
+		}
+
+		data[1] = *addr;
+	}
+
+	return 0;
+
+err:
+	DRM_DEBUG_KMS("mapping buffer %u failed\n", i);
+
+	return ret;
+}
+
 static void g2d_dma_start(struct g2d_data *g2d,
 			  struct g2d_runqueue_node *runqueue_node)
 {
