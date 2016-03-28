@@ -966,38 +966,6 @@ static bool g2d_check_buf_desc_is_valid(struct g2d_buf_desc *buf_desc,
 	return true;
 }
 
-static void g2d_unmap_cmdlist_gem(struct g2d_data *g2d,
-				  struct g2d_cmdlist_node *node,
-				  struct drm_file *filp)
-{
-	struct exynos_drm_subdrv *subdrv = &g2d->subdrv;
-	struct g2d_buf_info *buf_info = &node->buf_info;
-	int i;
-
-	for (i = 0; i < buf_info->map_nr; i++) {
-		struct g2d_buf_desc *buf_desc;
-		enum g2d_reg_type reg_type;
-		void *obj;
-
-		reg_type = buf_info->reg_types[i];
-
-		buf_desc = &buf_info->descs[reg_type];
-		obj = buf_info->obj[reg_type];
-
-		if (buf_info->types[reg_type] == BUF_TYPE_GEM)
-			exynos_drm_gem_put(subdrv->drm_dev, obj);
-		else
-			g2d_userptr_put_dma_addr(subdrv->drm_dev, obj);
-
-		buf_info->reg_types[i] = REG_TYPE_NONE;
-		buf_info->obj[reg_type] = NULL;
-		buf_info->types[reg_type] = 0;
-		memset(buf_desc, 0x00, sizeof(*buf_desc));
-	}
-
-	buf_info->map_nr = 0;
-}
-
 static void g2d_dma_start(struct g2d_data *g2d,
 			  struct g2d_runqueue_node *runqueue_node)
 {
@@ -1036,7 +1004,7 @@ static void g2d_free_runqueue_node(struct g2d_data *g2d,
 	 * objects in each command node so that they are unreferenced.
 	 */
 	list_for_each_entry(node, &runqueue_node->run_cmdlist, list)
-		g2d_unmap_cmdlist_gem(g2d, node, runqueue_node->filp);
+		;
 	list_splice_tail_init(&runqueue_node->run_cmdlist, &g2d->free_cmdlist);
 	mutex_unlock(&g2d->cmdlist_mutex);
 
@@ -1488,7 +1456,6 @@ static void g2d_close(struct drm_device *drm_dev, struct device *dev,
 	 */
 	mutex_lock(&g2d->cmdlist_mutex);
 	list_for_each_entry_safe(node, n, &g2d_priv->inuse_cmdlist, list) {
-		g2d_unmap_cmdlist_gem(g2d, node, file);
 		list_move_tail(&node->list, &g2d->free_cmdlist);
 	}
 	mutex_unlock(&g2d->cmdlist_mutex);
