@@ -932,6 +932,17 @@ static enum g2d_reg_type g2d_get_reg_type(unsigned int reg_offset)
 	return reg_type;
 }
 
+static bool g2d_is_left_top(unsigned int reg_offset)
+{
+	/*
+	 * For all the available coordinate registers (src, dst, msk, cw)
+	 * the left/top register always has even index, while the
+	 * right/bottom register has odd index.
+	 * Exploit this fact here.
+	 */
+	return !(reg_offset & 0x1);
+}
+
 static enum g2d_rect_type g2d_get_rect_type(unsigned int reg_offset)
 {
 	enum g2d_rect_type rect_type;
