@@ -250,19 +250,14 @@ enum g2d_mask_mode {
 /* maximum buffer pool size of userptr is 64MB as default */
 #define G2D_MAX_POOL		(64 * 1024 * 1024)
 
-enum {
-	BUF_TYPE_GEM = 1,
-	BUF_TYPE_USERPTR,
-};
-
-enum g2d_reg_type {
-	REG_TYPE_SRC,
-	REG_TYPE_SRC_PLANE2,
-	REG_TYPE_DST,
-	REG_TYPE_DST_PLANE2,
-	REG_TYPE_PAT,
-	REG_TYPE_MSK,
-	MAX_REG_TYPE_NR
+enum g2d_buf_type {
+	BUF_TYPE_SRC,
+	BUF_TYPE_SRC_PLANE2,
+	BUF_TYPE_DST,
+	BUF_TYPE_DST_PLANE2,
+	BUF_TYPE_PAT,
+	BUF_TYPE_MSK,
+	MAX_BUF_TYPE_NR
 };
 
 enum g2d_flag_bits {
@@ -380,7 +375,7 @@ struct g2d_cmdlist_node {
 	struct list_head	list;
 	struct g2d_cmdlist	*cmdlist;
 	dma_addr_t		dma_addr;
-	struct g2d_buf_info	buf_info[MAX_REG_TYPE_NR];
+	struct g2d_buf_info	buf_info[MAX_BUF_TYPE_NR];
 	struct g2d_bitblt_info	bitblt_info;
 
 	struct drm_exynos_pending_g2d_event	*event;
@@ -613,16 +608,16 @@ add_to_list:
 }
 
 static inline enum dma_data_direction g2d_get_dma_direction(
-	enum g2d_reg_type reg_type)
+	enum g2d_buf_type buf_type)
 {
-	switch (reg_type) {
-	case REG_TYPE_SRC:
-	case REG_TYPE_SRC_PLANE2:
-	case REG_TYPE_PAT:
-	case REG_TYPE_MSK:
+	switch (buf_type) {
+	case BUF_TYPE_SRC:
+	case BUF_TYPE_SRC_PLANE2:
+	case BUF_TYPE_PAT:
+	case BUF_TYPE_MSK:
 		return DMA_TO_DEVICE;
-	case REG_TYPE_DST:
-	case REG_TYPE_DST_PLANE2:
+	case BUF_TYPE_DST:
+	case BUF_TYPE_DST_PLANE2:
 		return DMA_FROM_DEVICE;
 	default:
 		return DMA_NONE;
@@ -953,36 +948,39 @@ static void g2d_userptr_free_all(struct drm_device *drm_dev,
 	mutex_unlock(&g2d->userptr_mutex);
 }
 
-static enum g2d_reg_type g2d_get_reg_type(unsigned int reg_offset)
+static enum g2d_buf_type g2d_get_buf_type(unsigned int reg_offset)
 {
-	enum g2d_reg_type reg_type;
+	enum g2d_buf_type buf_type;
 
 	switch (reg_offset) {
 	case G2D_SRC_BASE_ADDR:
 	case G2D_SRC_STRIDE:
 	case G2D_SRC_COLOR_MODE:
-		reg_type = REG_TYPE_SRC;
+		buf_type = BUF_TYPE_SRC;
 		break;
 	case G2D_SRC_PLANE2_BASE_ADDR:
-		reg_type = REG_TYPE_SRC_PLANE2;
+		buf_type = BUF_TYPE_SRC_PLANE2;
 		break;
 	case G2D_DST_BASE_ADDR:
 	case G2D_DST_STRIDE:
 	case G2D_DST_COLOR_MODE:
-		reg_type = REG_TYPE_DST;
+		buf_type = BUF_TYPE_DST;
 		break;
 	case G2D_DST_PLANE2_BASE_ADDR:
-		reg_type = REG_TYPE_DST_PLANE2;
+		buf_type = BUF_TYPE_DST_PLANE2;
 		break;
 	case G2D_PAT_BASE_ADDR:
-		reg_type = REG_TYPE_PAT;
+	case G2D_PAT_STRIDE:
+		buf_type = BUF_TYPE_PAT;
 		break;
 	case G2D_MSK_BASE_ADDR:
-		reg_type = REG_TYPE_MSK;
+	case G2D_MSK_STRIDE:
+	default:
+		buf_type = BUF_TYPE_MSK;
 		break;
 	}
 
-	return reg_type;
+	return buf_type;
 }
 
 static bool g2d_is_left_top(unsigned int reg_offset)
@@ -1517,7 +1515,7 @@ static int g2d_validate_base_cmds(struct device *dev,
 
 	for (index = cmdlist->last - 2 * nr; index < cmdlist->last; index += 2) {
 		struct g2d_buf_info *buf_info;
-		enum g2d_reg_type reg_type;
+		enum g2d_buf_type buf_type;
 		unsigned long fmt;
 
 		reg_offset = cmdlist->data[index] & 0x0fff;
@@ -1536,8 +1534,8 @@ static int g2d_validate_base_cmds(struct device *dev,
 		case G2D_DST_PLANE2_BASE_ADDR:
 		case G2D_PAT_BASE_ADDR:
 		case G2D_MSK_BASE_ADDR:
-			reg_type = g2d_get_reg_type(reg_offset);
-			buf_info = &node->buf_info[reg_type];
+			buf_type = g2d_get_buf_type(reg_offset);
+			buf_info = &node->buf_info[buf_type];
 
 			/* check userptr buffer type. */
 			if (cmdlist->data[index] & G2D_BUF_USERPTR) {
@@ -1556,8 +1554,8 @@ static int g2d_validate_base_cmds(struct device *dev,
 		case G2D_DST_STRIDE:
 		case G2D_PAT_STRIDE:
 		case G2D_MSK_STRIDE:
-			reg_type = g2d_get_reg_type(reg_offset);
-			buf_info = &node->buf_info[reg_type];
+			buf_type = g2d_get_buf_type(reg_offset);
+			buf_info = &node->buf_info[buf_type];
 
 			/*
 			 * The hardware allows for signed strides for certain
@@ -1572,8 +1570,8 @@ static int g2d_validate_base_cmds(struct device *dev,
 
 		case G2D_SRC_COLOR_MODE:
 		case G2D_DST_COLOR_MODE:
-			reg_type = g2d_get_reg_type(reg_offset);
-			buf_info = &node->buf_info[reg_type];
+			buf_type = g2d_get_buf_type(reg_offset);
+			buf_info = &node->buf_info[buf_type];
 
 			buf_info->format = cmdlist->data[index + 1];
 			fmt = buf_info->format & G2D_FMT_MASK;
@@ -1594,7 +1592,7 @@ static int g2d_validate_base_cmds(struct device *dev,
 			break;
 
 		case G2D_PAT_COLOR_MODE:
-			buf_info = &node->buf_info[REG_TYPE_PAT];
+			buf_info = &node->buf_info[BUF_TYPE_PAT];
 
 			buf_info->format = cmdlist->data[index + 1];
 			fmt = buf_info->format & G2D_FMT_MASK;
@@ -1609,7 +1607,7 @@ static int g2d_validate_base_cmds(struct device *dev,
 			break;
 
 		case G2D_MSK_MODE:
-			buf_info = &node->buf_info[REG_TYPE_MSK];
+			buf_info = &node->buf_info[BUF_TYPE_MSK];
 
 			buf_info->format = cmdlist->data[index + 1];
 			fmt = buf_info->format & G2D_MSK_MASK;
