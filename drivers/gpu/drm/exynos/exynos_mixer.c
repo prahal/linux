@@ -81,6 +81,12 @@ enum mixer_flag_bits {
 	MXR_BIT_HAS_SCLK,
 };
 
+enum mixer_range_mode {
+	MXR_RANGE_AUTOMATIC,
+	MXR_RANGE_FULL,
+	MXR_RANGE_NARROW,
+};
+
 static const uint32_t mixer_formats[] = {
 	DRM_FORMAT_XRGB4444,
 	DRM_FORMAT_ARGB4444,
@@ -116,6 +122,7 @@ struct mixer_context {
 	struct exynos_drm_plane	planes[MIXER_WIN_NR];
 	unsigned long		active_windows;
 	unsigned long		flags;
+	enum mixer_range_mode	range_mode;
 
 	int			irq;
 	void __iomem		*mixer_regs;
@@ -392,18 +399,25 @@ static void mixer_cfg_scan(struct mixer_context *ctx, int width, int height)
 
 static void mixer_cfg_rgb_fmt(struct mixer_context *ctx, unsigned int height)
 {
+	enum mixer_range_mode rm = ctx->range_mode;
 	u32 val;
 
 	switch (height) {
 	case 480:
 	case 576:
 	case 600:
-		val = MXR_CFG_RGB601_0_255;
+		if (rm == MXR_RANGE_AUTOMATIC || rm == MXR_RANGE_FULL)
+			val = MXR_CFG_RGB601_0_255;
+		else
+			val = MXR_CFG_RGB601_16_235;
 		break;
 	case 720:
 	case 1080:
 	default:
-		val = MXR_CFG_RGB709_16_235;
+		if (rm == MXR_RANGE_AUTOMATIC || rm == MXR_RANGE_NARROW)
+			val = MXR_CFG_RGB709_16_235;
+		else
+			val = MXR_CFG_RGB709_0_255;
 		/* Configure the BT.709 CSC matrix for full range RGB. */
 		mixer_reg_write(ctx, MXR_CM_COEFF_Y,
 			MXR_CSC_CT( 0.184,  0.614,  0.063) |
