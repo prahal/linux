@@ -642,6 +642,28 @@
 		};
 	};
 
+	g3d_opp_table: opp_table7 {
+		compatible = "operating-points-v2";
+		opp-shared;
+
+		opp-160000000 {
+			opp-hz = /bits/ 64 <160000000>;
+			opp-microvolt = <875000>;
+		};
+		opp-266000000 {
+			opp-hz = /bits/ 64 <266000000>;
+			opp-microvolt = <900000>;
+		};
+		opp-350000000 {
+			opp-hz = /bits/ 64 <350000000>;
+			opp-microvolt = <950000>;
+		};
+		opp-440000000 {
+			opp-hz = /bits/ 64 <440000000>;
+			opp-microvolt = <1025000>;
+		};
+	};
+
 	pmu {
 		interrupts = <2 2>, <3 2>, <18 2>, <19 2>;
 	};
@@ -712,6 +734,10 @@
 
 &gic {
 	cpu-offset = <0x4000>;
+};
+
+&gpu {
+	operating-points-v2 = <&g3d_opp_table>;
 };
 
 &hdmi {
