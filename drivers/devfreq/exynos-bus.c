@@ -445,6 +445,9 @@ static int exynos_bus_probe(struct platform_device *pdev)
 		goto err;
 	}
 
+	/* Store the frequency of the suspend OPP, if there is one (zero otherwise). */
+	bus->devfreq->suspend_freq = dev_pm_opp_get_suspend_opp_freq(dev);
+
 	/* Register opp_notifier to catch the change of OPP  */
 	ret = devm_devfreq_register_opp_notifier(dev, bus->devfreq);
 	if (ret < 0) {
