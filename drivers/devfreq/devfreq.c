@@ -880,14 +880,24 @@ EXPORT_SYMBOL(devfreq_turbo_put);
  */
 int devfreq_suspend_device(struct devfreq *devfreq)
 {
+	int ret;
+
 	if (!devfreq)
 		return -EINVAL;
+
+	if (atomic_add_return(1, &devfreq->suspend_refcount) > 1)
+		return 0;
 
 	if (!devfreq->governor)
 		return 0;
 
-	return devfreq->governor->event_handler(devfreq,
+	ret = devfreq->governor->event_handler(devfreq,
 				DEVFREQ_GOV_SUSPEND, NULL);
+
+	if (ret < 0)
+		atomic_dec(&devfreq->suspend_refcount);
+
+	return ret;
 }
 EXPORT_SYMBOL(devfreq_suspend_device);
 
@@ -901,14 +911,24 @@ EXPORT_SYMBOL(devfreq_suspend_device);
  */
 int devfreq_resume_device(struct devfreq *devfreq)
 {
+	int ret;
+
 	if (!devfreq)
 		return -EINVAL;
+
+	if (atomic_sub_return(1, &devfreq->suspend_refcount) > 0)
+		return 0;
 
 	if (!devfreq->governor)
 		return 0;
 
-	return devfreq->governor->event_handler(devfreq,
+	ret = devfreq->governor->event_handler(devfreq,
 				DEVFREQ_GOV_RESUME, NULL);
+
+	if (ret < 0)
+		atomic_inc(&devfreq->suspend_refcount);
+
+	return ret;
 }
 EXPORT_SYMBOL(devfreq_resume_device);
 

@@ -157,6 +157,7 @@ struct devfreq {
 	struct delayed_work work;
 
 	unsigned int turbo_refcount;
+	atomic_t suspend_refcount;
 
 	unsigned long previous_freq;
 	struct devfreq_dev_status last_status;
