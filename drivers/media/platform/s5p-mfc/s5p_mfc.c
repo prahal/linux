@@ -138,11 +138,9 @@ void s5p_mfc_cleanup_queue(struct list_head *lh, struct vb2_queue *vq)
 
 	while (!list_empty(lh)) {
 		b = list_entry(lh->next, struct s5p_mfc_buf, list);
-		if (b->b) {
-			for (i = 0; i < b->b->vb2_buf.num_planes; i++)
-				vb2_set_plane_payload(&b->b->vb2_buf, i, 0);
-			vb2_buffer_done(&b->b->vb2_buf, VB2_BUF_STATE_ERROR);
-		}
+		for (i = 0; i < b->b->vb2_buf.num_planes; i++)
+			vb2_set_plane_payload(&b->b->vb2_buf, i, 0);
+		vb2_buffer_done(&b->b->vb2_buf, VB2_BUF_STATE_ERROR);
 		list_del(&b->list);
 	}
 }
@@ -453,7 +451,7 @@ static void s5p_mfc_handle_frame(struct s5p_mfc_ctx *ctx,
 	}
 leave_handle_frame:
 	if ((ctx->src_queue_cnt == 0 && ctx->state != MFCINST_FINISHING)
-				    || ctx->dst_queue_cnt < ctx->dpb_count)
+				    || ctx->dst_queue_cnt < ctx->pb_count)
 		clear_work_bit(ctx);
 	s5p_mfc_hw_call(dev->mfc_ops, clear_int_flags, dev);
 	wake_up_ctx(ctx, reason, err);
@@ -524,7 +522,7 @@ static void s5p_mfc_handle_seq_done(struct s5p_mfc_ctx *ctx,
 
 		s5p_mfc_hw_call(dev->mfc_ops, dec_calc_dpb_size, ctx);
 
-		ctx->dpb_count = s5p_mfc_hw_call(dev->mfc_ops, get_dpb_count,
+		ctx->pb_count = s5p_mfc_hw_call(dev->mfc_ops, get_dpb_count,
 				dev);
 		ctx->mv_count = s5p_mfc_hw_call(dev->mfc_ops, get_mv_count,
 				dev);

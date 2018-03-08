@@ -178,8 +178,13 @@ struct s5p_mfc_ctx;
 struct s5p_mfc_buf {
 	struct vb2_v4l2_buffer *b;
 	struct list_head list;
-	size_t luma;
-	size_t chroma;
+	union {
+		struct {
+			size_t luma;
+			size_t chroma;
+		} raw;
+		size_t stream;
+	} cookie;
 	int flags;
 };
 
@@ -623,7 +628,7 @@ struct s5p_mfc_ctx {
 	int after_packed_pb;
 	int sei_fp_parse;
 
-	int dpb_count;
+	int pb_count;
 	int total_dpb_count;
 	int mv_count;
 	/* Buffers */

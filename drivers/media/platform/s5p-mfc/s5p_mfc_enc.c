@@ -815,8 +815,8 @@ static int enc_post_seq_start(struct s5p_mfc_ctx *ctx)
 	} else {
 		enc_pb_count = s5p_mfc_hw_call(dev->mfc_ops,
 				get_enc_dpb_count, dev);
-		if (ctx->dpb_count < enc_pb_count)
-			ctx->dpb_count = enc_pb_count;
+		if (ctx->pb_count < enc_pb_count)
+			ctx->pb_count = enc_pb_count;
 		ctx->state = MFCINST_HEAD_PRODUCED;
 	}
 
@@ -1180,13 +1180,13 @@ static int vidioc_reqbufs(struct file *file, void *priv,
 
 		if (IS_MFCV6_PLUS(dev)) {
 			/* Check for min encoder buffers */
-			if (ctx->dpb_count &&
-				(reqbufs->count < ctx->dpb_count)) {
-				reqbufs->count = ctx->dpb_count;
+			if (ctx->pb_count &&
+				(reqbufs->count < ctx->pb_count)) {
+				reqbufs->count = ctx->pb_count;
 				mfc_debug(2, "Minimum %d output buffers needed\n",
-						ctx->dpb_count);
+						ctx->pb_count);
 			} else {
-				ctx->dpb_count = reqbufs->count;
+				ctx->pb_count = reqbufs->count;
 			}
 		}
 
@@ -1651,7 +1651,7 @@ static int s5p_mfc_enc_g_v_ctrl(struct v4l2_ctrl *ctrl)
 	case V4L2_CID_MIN_BUFFERS_FOR_OUTPUT:
 		if (ctx->state >= MFCINST_HEAD_PARSED &&
 		    ctx->state < MFCINST_ABORT) {
-			ctrl->val = ctx->dpb_count;
+			ctrl->val = ctx->pb_count;
 			break;
 		} else if (ctx->state != MFCINST_INIT) {
 			v4l2_err(&dev->v4l2_dev, "Encoding not initialised\n");
@@ -1662,7 +1662,7 @@ static int s5p_mfc_enc_g_v_ctrl(struct v4l2_ctrl *ctrl)
 				S5P_MFC_R2H_CMD_SEQ_DONE_RET, 0);
 		if (ctx->state >= MFCINST_HEAD_PARSED &&
 		    ctx->state < MFCINST_ABORT) {
-			ctrl->val = ctx->dpb_count;
+			ctrl->val = ctx->pb_count;
 		} else {
 			v4l2_err(&dev->v4l2_dev, "Encoding not initialised\n");
 			return -EINVAL;
@@ -1875,6 +1875,8 @@ static int s5p_mfc_buf_init(struct vb2_buffer *vb)
 			return ret;
 		i = vb->index;
 		ctx->dst_bufs[i].b = vbuf;
+		ctx->dst_bufs[i].cookie.stream =
+					vb2_dma_contig_plane_dma_addr(vb, 0);
 		ctx->dst_bufs_cnt++;
 	} else if (vq->type == V4L2_BUF_TYPE_VIDEO_OUTPUT_MPLANE) {
 		ret = check_vb_with_fmt(ctx->src_fmt, vb);
@@ -1882,8 +1884,10 @@ static int s5p_mfc_buf_init(struct vb2_buffer *vb)
 			return ret;
 		i = vb->index;
 		ctx->src_bufs[i].b = vbuf;
-		ctx->src_bufs[i].luma = vb2_dma_contig_plane_dma_addr(vb, 0);
-		ctx->src_bufs[i].chroma = vb2_dma_contig_plane_dma_addr(vb, 1);
+		ctx->src_bufs[i].cookie.raw.luma =
+					vb2_dma_contig_plane_dma_addr(vb, 0);
+		ctx->src_bufs[i].cookie.raw.chroma =
+					vb2_dma_contig_plane_dma_addr(vb, 1);
 		ctx->src_bufs_cnt++;
 	} else {
 		mfc_err("invalid queue type: %d\n", vq->type);
@@ -1943,9 +1947,9 @@ static int s5p_mfc_start_streaming(struct vb2_queue *q, unsigned int count)
 						0);
 		}
 
-		if (ctx->src_bufs_cnt < ctx->dpb_count) {
+		if (ctx->src_bufs_cnt < ctx->pb_count) {
 			mfc_err("Need minimum %d OUTPUT buffers\n",
-					ctx->dpb_count);
+					ctx->pb_count);
 			return -ENOBUFS;
 		}
 	}

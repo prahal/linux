@@ -229,11 +229,11 @@ static int s5p_mfc_ctx_ready(struct s5p_mfc_ctx *ctx)
 	/* Context is to decode a frame */
 	if (ctx->src_queue_cnt >= 1 &&
 	    ctx->state == MFCINST_RUNNING &&
-	    ctx->dst_queue_cnt >= ctx->dpb_count)
+	    ctx->dst_queue_cnt >= ctx->pb_count)
 		return 1;
 	/* Context is to return last frame */
 	if (ctx->state == MFCINST_FINISHING &&
-	    ctx->dst_queue_cnt >= ctx->dpb_count)
+	    ctx->dst_queue_cnt >= ctx->pb_count)
 		return 1;
 	/* Context is to set buffers */
 	if (ctx->src_queue_cnt >= 1 &&
@@ -243,7 +243,7 @@ static int s5p_mfc_ctx_ready(struct s5p_mfc_ctx *ctx)
 	/* Resolution change */
 	if ((ctx->state == MFCINST_RES_CHANGE_INIT ||
 		ctx->state == MFCINST_RES_CHANGE_FLUSH) &&
-		ctx->dst_queue_cnt >= ctx->dpb_count)
+		ctx->dst_queue_cnt >= ctx->pb_count)
 		return 1;
 	if (ctx->state == MFCINST_RES_CHANGE_END &&
 		ctx->src_queue_cnt >= 1)
@@ -739,7 +739,7 @@ static int s5p_mfc_dec_g_v_ctrl(struct v4l2_ctrl *ctrl)
 	case V4L2_CID_MIN_BUFFERS_FOR_CAPTURE:
 		if (ctx->state >= MFCINST_HEAD_PARSED &&
 		    ctx->state < MFCINST_ABORT) {
-			ctrl->val = ctx->dpb_count;
+			ctrl->val = ctx->pb_count;
 			break;
 		} else if (ctx->state != MFCINST_INIT &&
 				ctx->state != MFCINST_RES_CHANGE_END) {
@@ -751,7 +751,7 @@ static int s5p_mfc_dec_g_v_ctrl(struct v4l2_ctrl *ctrl)
 				S5P_MFC_R2H_CMD_SEQ_DONE_RET, 0);
 		if (ctx->state >= MFCINST_HEAD_PARSED &&
 		    ctx->state < MFCINST_ABORT) {
-			ctrl->val = ctx->dpb_count;
+			ctrl->val = ctx->pb_count;
 		} else {
 			v4l2_err(&dev->v4l2_dev, "Decoding not initialised\n");
 			return -EINVAL;
@@ -895,15 +895,6 @@ static int s5p_mfc_queue_setup(struct vb2_queue *vq,
 	struct s5p_mfc_ctx *ctx = fh_to_ctx(vq->drv_priv);
 	struct s5p_mfc_dev *dev = ctx->dev;
 
-	/*
-	 * The MFC hardware writes temporary decoding data into the unused part
-	 * of the source buffers. Hence we need to map the source as bidirectional.
-	 */
-	if (vq->type == V4L2_BUF_TYPE_VIDEO_OUTPUT_MPLANE &&
-	    vq->memory == V4L2_MEMORY_DMABUF) {
-		vq->bidirectional = 1;
-	}
-
 	/* Video output for decoding (source)
 	 * this can be set after getting an instance */
 	if (ctx->state == MFCINST_INIT &&
@@ -921,10 +912,10 @@ static int s5p_mfc_queue_setup(struct vb2_queue *vq,
 		/* Output plane count is 2 - one for Y and one for CbCr */
 		*plane_count = 2;
 		/* Setup buffer count */
-		if (*buf_count < ctx->dpb_count)
-			*buf_count = ctx->dpb_count;
-		if (*buf_count > ctx->dpb_count + MFC_MAX_EXTRA_DPB)
-			*buf_count = ctx->dpb_count + MFC_MAX_EXTRA_DPB;
+		if (*buf_count < ctx->pb_count)
+			*buf_count = ctx->pb_count;
+		if (*buf_count > ctx->pb_count + MFC_MAX_EXTRA_DPB)
+			*buf_count = ctx->pb_count + MFC_MAX_EXTRA_DPB;
 		if (*buf_count > MFC_MAX_BUFFERS)
 			*buf_count = MFC_MAX_BUFFERS;
 	} else {
@@ -979,8 +970,10 @@ static int s5p_mfc_buf_init(struct vb2_buffer *vb)
 		}
 		i = vb->index;
 		ctx->dst_bufs[i].b = vbuf;
-		ctx->dst_bufs[i].luma = vb2_dma_contig_plane_dma_addr(vb, 0);
-		ctx->dst_bufs[i].chroma = vb2_dma_contig_plane_dma_addr(vb, 1);
+		ctx->dst_bufs[i].cookie.raw.luma =
+					vb2_dma_contig_plane_dma_addr(vb, 0);
+		ctx->dst_bufs[i].cookie.raw.chroma =
+					vb2_dma_contig_plane_dma_addr(vb, 1);
 		ctx->dst_bufs_cnt++;
 	} else if (vq->type == V4L2_BUF_TYPE_VIDEO_OUTPUT_MPLANE) {
 		if (IS_ERR_OR_NULL(ERR_PTR(
@@ -995,34 +988,14 @@ static int s5p_mfc_buf_init(struct vb2_buffer *vb)
 
 		i = vb->index;
 		ctx->src_bufs[i].b = vbuf;
+		ctx->src_bufs[i].cookie.stream =
+					vb2_dma_contig_plane_dma_addr(vb, 0);
 		ctx->src_bufs_cnt++;
 	} else {
 		mfc_err("s5p_mfc_buf_init: unknown queue type\n");
 		return -EINVAL;
 	}
 	return 0;
-}
-
-static void s5p_mfc_buf_cleanup(struct vb2_buffer *vb)
-{
-	struct vb2_queue *vq = vb->vb2_queue;
-	struct s5p_mfc_ctx *ctx = fh_to_ctx(vq->drv_priv);
-
-	switch (vq->type) {
-	case V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE:
-		ctx->dst_bufs[vb->index].b = NULL;
-		ctx->dst_bufs_cnt--;
-		break;
-
-	case V4L2_BUF_TYPE_VIDEO_OUTPUT_MPLANE:
-		ctx->src_bufs[vb->index].b = NULL;
-		ctx->src_bufs_cnt--;
-		break;
-
-	default:
-		mfc_err("s5p_mfc_buf_cleanup: unknown queue type\n");
-		break;
-	}
 }
 
 static int s5p_mfc_start_streaming(struct vb2_queue *q, unsigned int count)
@@ -1123,7 +1096,6 @@ static struct vb2_ops s5p_mfc_dec_qops = {
 	.wait_prepare		= vb2_ops_wait_prepare,
 	.wait_finish		= vb2_ops_wait_finish,
 	.buf_init		= s5p_mfc_buf_init,
-	.buf_cleanup		= s5p_mfc_buf_cleanup,
 	.start_streaming	= s5p_mfc_start_streaming,
 	.stop_streaming		= s5p_mfc_stop_streaming,
 	.buf_queue		= s5p_mfc_buf_queue,
