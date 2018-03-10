@@ -609,9 +609,9 @@ int mali_platform_device_init(struct platform_device *pdev)
 	data->power_workqueue = create_singlethread_workqueue("mali_power");
 	if (!data->power_workqueue)
 		goto fail_opp_check;
+#endif
 
 	INIT_WORK(&data->power_work, exynos4412_power_work);
-#endif
 
 	if (default_area) {
 		mali_gpu_data.fb_start = cma_get_base(default_area);
