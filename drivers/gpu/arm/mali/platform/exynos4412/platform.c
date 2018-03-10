@@ -637,7 +637,9 @@ int mali_platform_device_init(struct platform_device *pdev)
 	return 0;
 
 fail_platform_data:
+#if defined(CONFIG_MALI_PM_UTILIZATION)
 	destroy_workqueue(data->power_workqueue);
+#endif
 
 fail_opp_check:
 	exynos4412_opp_deinit(dev, data);
