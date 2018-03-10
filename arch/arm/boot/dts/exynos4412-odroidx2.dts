@@ -34,6 +34,11 @@
 	};
 };
 
+&buck2_reg {
+        regulator-max-microvolt = <1400000>;
+};
+
+
 &pwm {
 	status = "okay";
 	samsung,pwm-outputs = <0>, <1>;
