@@ -267,8 +267,8 @@
 					 <&clock CLK_MOUT_G3D1>;
 		assigned-clock-rates = <0>, <0>, <160000000>, <160000000>;
 
-		clocks = <&clock CLK_SCLK_G3D>, <&clock CLK_G3D>;
-		clock-names = "sclk_g3d", "g3d";
+		clocks = <&clock CLK_SCLK_G3D>, <&clock CLK_G3D>, <&clock CLK_FOUT_VPLL>;
+		clock-names = "sclk_g3d", "g3d", "parent_g3d";
 
 		reg = <0x13000000 0x30000>;
 

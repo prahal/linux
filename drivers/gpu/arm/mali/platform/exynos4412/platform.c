@@ -95,6 +95,7 @@ struct exynos4412_drvdata {
 
 	struct clk *sclk;
 	struct clk *clk;
+	struct clk *parentclk;
 	struct regulator *regulator;
 	struct devfreq *leftbus_devfreq;
 
@@ -183,6 +184,10 @@ static int exynos4412_opp_update(struct exynos4412_drvdata *data,
 		if (ret < 0)
 			goto out;
 	}
+
+	ret = clk_set_rate(data->parentclk, freq);
+	if (ret < 0)
+		goto out;
 
 	ret = clk_set_rate(data->sclk, freq);
 	if (ret < 0)
@@ -295,6 +300,7 @@ static int exynos4412_clock_init(struct device *dev, struct exynos4412_drvdata *
 	struct device_node *np;
 	struct clk *sclk;
 	struct clk *clk;
+	struct clk *parentclk;
 
 	unsigned long rate;
 
@@ -312,6 +318,12 @@ static int exynos4412_clock_init(struct device *dev, struct exynos4412_drvdata *
 		goto fail_clk;
 	}
 
+	parentclk = of_clk_get_by_name(np, "parent_g3d");
+	if (IS_ERR(parentclk)) {
+		dev_err(dev, MSG_PREFIX "failed to get G3D parent clock\n");
+		goto fail_parentclk;
+	}
+
 	if (clk_prepare(sclk) < 0) {
 		dev_err(dev, MSG_PREFIX "failed to prepare G3D core clock\n");
 		goto fail_prepare_sclk;
@@ -322,19 +334,31 @@ static int exynos4412_clock_init(struct device *dev, struct exynos4412_drvdata *
 		goto fail_prepare_clk;
 	}
 
+	if (clk_prepare(parentclk) < 0) {
+		dev_err(dev, MSG_PREFIX "failed to prepare G3D parent clock\n");
+		goto fail_prepare_parentclk;
+	}
+
 	rate = clk_get_rate(clk);
 
 	dev_info(dev, MSG_PREFIX "G3D clock rate = %lu MHz\n", rate / 1000000);
 
 	data->sclk = sclk;
 	data->clk = clk;
+	data->parentclk = parentclk;
 
 	return 0;
+
+fail_prepare_parentclk:
+	clk_unprepare(clk);
 
 fail_prepare_clk:
 	clk_unprepare(sclk);
 
 fail_prepare_sclk:
+	clk_put(parentclk);
+
+fail_parentclk:
 	clk_put(clk);
 
 fail_clk:
@@ -346,6 +370,9 @@ fail_sclk:
 
 static void exynos4412_clock_deinit(struct device *dev, struct exynos4412_drvdata *data)
 {
+	clk_unprepare(data->parentclk);
+	clk_put(data->parentclk);
+
 	clk_unprepare(data->clk);
 	clk_put(data->clk);
 
@@ -492,6 +519,7 @@ int mali_platform_runtime_suspend(struct device *dev)
 
 	data->cur_state = 0;
 
+	clk_disable(data->parentclk);
 	clk_disable(data->clk);
 	clk_disable(data->sclk);
 
@@ -508,6 +536,10 @@ int mali_platform_runtime_resume(struct device *dev)
 		goto out;
 
 	ret = clk_enable(data->clk);
+	if (ret < 0)
+		goto out;
+
+	ret = clk_enable(data->parentclk);
 
 #if defined(CONFIG_MALI_PM_NONE)
 	if (ret < 0)
