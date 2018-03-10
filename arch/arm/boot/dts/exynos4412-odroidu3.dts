@@ -14,7 +14,7 @@
 
 / {
 	model = "Hardkernel ODROID-U3 board based on Exynos4412";
-	compatible = "hardkernel,odroid-u3", "samsung,exynos4412", "samsung,exynos4";
+	compatible = "hardkernel,odroid-u3", "samsung,exynos4412-prime", "samsung,exynos4412", "samsung,exynos4";
 
 	memory@40000000 {
 		device_type = "memory";

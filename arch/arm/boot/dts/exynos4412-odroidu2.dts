@@ -15,7 +15,7 @@
 
 / {
 	model = "Hardkernel ODROID-U2 board based on Exynos4412";
-	compatible = "hardkernel,odroid-u2", "samsung,exynos4412", "samsung,exynos4";
+	compatible = "hardkernel,odroid-u2", "samsung,exynos4412-prime", "samsung,exynos4412", "samsung,exynos4";
 
 };
 
